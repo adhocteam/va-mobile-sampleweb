@@ -1,0 +1,9 @@
+<div class="container">
+  <div class="row">
+    {{#if user}}
+      <h3>Hello {{{ user.email }}}</h3>
+    {{else}}
+      <h3><a href="/auth">Please Login</a></h3>
+    {{/if}}
+  </div>
+</div>

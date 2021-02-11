@@ -1,0 +1,14 @@
+<a href="/messaging"> &lt; Folders</a> 
+<ul>
+ {{#each messages}}
+   <li>
+      {{this.attributes.sender_name}} - {{this.attributes.subject}} [{{this.attributes.sent_date}}])
+  </li>
+ {{/each}}
+</ul>
+
+
+<hr/>
+<pre>
+  {{{ raw }}}
+</pre>

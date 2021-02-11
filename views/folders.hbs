@@ -1,0 +1,15 @@
+<ul>
+ {{#each folders}}
+   <li>
+     <a href="/messaging/{{this.attributes.folder_id}}">
+      {{this.attributes.name}} ({{this.attributes.unread_count}}/{{this.attributes.count}})
+     </a>
+  </li>
+ {{/each}}
+</ul>
+
+
+<hr/>
+<pre>
+  {{{ raw }}}
+</pre>

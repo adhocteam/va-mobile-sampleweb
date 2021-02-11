@@ -1,7 +1,7 @@
 {
-  "name": "va-api-client-oauth-example",
+  "name": "va-mobile-sampleweb",
   "version": "1.0.0",
-  "description": "Example OAuth Client with VA API Platform",
+  "description": "VA Mobile API Client as a web app",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,14 +9,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/department-of-veterans-affairs/vets-api-clients.git"
+    "url": "git+https://github.com/adhocteam/va-mobile-sampleweb.git"
   },
-  "author": "Ed Paget",
-  "license": " CC0-1.0",
+  "author": "Patrick Vinograd",
   "bugs": {
-    "url": "https://github.com/department-of-veterans-affairs/vets-api-clients/issues"
+    "url": "https://github.com/adhocteam/va-mobile-sampleweb/issues"
   },
-  "homepage": "https://github.com/department-of-veterans-affairs/vets-api-clients#readme",
+  "homepage": "https://github.com/adhocteam/va-mobile-sammpleweb#readme",
   "dependencies": {
     "express": "^4.17.1",
     "express-session": "^1.17.1",

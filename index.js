@@ -3,6 +3,7 @@ const { Issuer, Strategy } = require('openid-client');
 const passport = require('passport');
 const process = require('process');
 const session = require('express-session');
+const sessionStore = require('express-session-rsdb');
 const request = require('request-promise-native');
 const hbs = require('hbs');
 const shajs = require('sha.js');
@@ -96,7 +97,13 @@ function startApp(client) {
   app.engine('handlebars', hbs.__express);
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(session({ secret: secret, saveUninitialized: true, resave: true, cookie: { maxAge: 60 * 60000 }}));
+  app.use(session({
+    store: new sessionStore(),
+    secret: secret,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false, maxAge: 60 * 60000 },
+  }))
 
   app.get('/', (req, res) => {
     res.render('index', { user: req.session.user, activeIndex: true, header: "Welcome" });

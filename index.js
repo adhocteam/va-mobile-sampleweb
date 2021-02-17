@@ -95,6 +95,7 @@ function startApp(client) {
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
   app.engine('handlebars', hbs.__express);
+  app.use(express.static('assets'))
   app.use(passport.initialize());
   app.use(passport.session());
   app.use(session({
@@ -172,20 +173,22 @@ function startApp(client) {
          );
   
   app.get('/auth/refresh', (req, res, done) => {
-    client.refresh(req.session.user['refresh_token']).then(tokenset => {
-      req.session.user = Object.assign(req.session.user, tokenset)
-      console.log('refresh access_token', tokenset.access_token);
-      res.send("Refreshed");
-      done();
+    const extras = {
+      exchangeBody: {
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        redirect_uri: CALLBACK_URL,
+      },
+    }
+    client.refresh(req.session.user['refresh_token'], extras).then(tokenset => {
+      req.session.user = Object.assign(req.session.user, tokenset);
+      req.session.save();
+      console.log('post-refresh req.session.user', req.session.user);
+    }).then(() => {
+      res.redirect('/');
     });
   });
   
-  app.get('/auth/introspect', (req, res, done) => {
-    client.introspect(req.session.user['access_token']).then(tokendata => {
-      res.json(tokendata);
-      done();
-    });
-  });
   app.get('/logout', (req, res, done) => {
     req.session.destroy();
     res.redirect('/');

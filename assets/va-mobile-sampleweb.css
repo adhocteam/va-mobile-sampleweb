@@ -1,0 +1,34 @@
+.footer {
+  width:99%;
+  position:absolute;
+  bottom:0;
+  margin:0 auto;
+}
+  
+.collapsible {
+  background:#2a2a2a;
+  color:#fff;
+  cursor: pointer;
+  padding: 8px;
+  width: 150px;
+  border: none;
+  text-align: center;
+  outline: none;
+  font-size: 15px;
+  border-top-left-radius:10px;
+  border-top-right-radius:10px;
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .collapsible:hover {
+  background-color: #ccc;
+}
+
+/* Style the collapsible content. Note: hidden by default */
+.content {
+  padding: 8px;
+  width: 100%;
+  display: none;
+  overflow: hidden;
+  background-color: #f1f1f1;
+}

@@ -95,22 +95,23 @@ function startApp(client) {
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
   app.engine('handlebars', hbs.__express);
-  app.use(express.static('assets'))
-  app.use(passport.initialize());
-  app.use(passport.session());
+  app.use(express.static('assets'));
   app.use(session({
     store: new sessionStore(),
     secret: secret,
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
-  }))
+  }));
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   app.get('/', (req, res) => {
+    console.log('session id', req.session.id);
     res.render('index', { user: req.session.user, activeIndex: true, header: "Welcome" });
   });
 
-  app.get('/user', requireLogin, async (req, res, done) => {
+  app.get('/user', requireLogin, async (req, res, next) => {
     const options = {
       url: API_URL + '/mobile/v0/user',
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
@@ -126,12 +127,13 @@ function startApp(client) {
     }
   });
   
-  app.get('/messaging', requireLogin, async (req, res, done) => {
+  app.get('/messaging', requireLogin, async (req, res, next) => {
     const options = {
       url: API_URL + '/mobile/v0/messaging/health/folders',
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     try {
+    console.log('folders request', options);
     const response = await request(options);
     const raw = JSON.stringify(JSON.parse(response), undefined, 2);
     const { data } = JSON.parse(response);
@@ -143,13 +145,14 @@ function startApp(client) {
     }
   });
 
-  app.get('/messaging/:folderId', requireLogin, async (req, res, done) => {
+  app.get('/messaging/:folderId', requireLogin, async (req, res, next) => {
     debugger;
     const options = {
       url: API_URL + `/mobile/v0/messaging/health/folders/${req.params.folderId}/messages`,
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     try {
+    console.log('folder request', options);
     const response = await request(options);
     const raw = JSON.stringify(JSON.parse(response), undefined, 2);
     const { data } = JSON.parse(response)
@@ -162,45 +165,50 @@ function startApp(client) {
   });
 
   app.get('/auth', passport.authenticate('oidc'),
-          function(req, res) {
-            req.session.user = Object.assign(req.session.user, req.user);
-          });
-  app.get('/auth/login-success', passport.authenticate('oidc'),
-          function(req, res) {
-            req.session.user = Object.assign(req.user);
-            res.redirect('/');
-          }
-         );
-  
-  app.get('/auth/refresh', (req, res, done) => {
-    const extras = {
-      exchangeBody: {
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        redirect_uri: CALLBACK_URL,
-      },
+    function(req, res) {
+      req.session.user = Object.assign(req.session.user, req.user);
     }
-    client.refresh(req.session.user['refresh_token'], extras).then(tokenset => {
-      req.session.user = Object.assign(req.session.user, tokenset);
-      req.session.save();
-      console.log('post-refresh req.session.user', req.session.user);
-    }).then(() => {
+  );
+  app.get('/auth/login-success', passport.authenticate('oidc'),
+    function(req, res) {
+      req.session.user = Object.assign(req.user);
       res.redirect('/');
-    });
+    }
+  );
+  
+  app.get('/auth/refresh', async (req, res, next) => {
+    try {
+      const extras = {
+        exchangeBody: {
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          redirect_uri: CALLBACK_URL,
+        },
+      }
+      console.log('Refreshing with', req.session.user['refresh_token']);
+      var tokenset = await client.refresh(req.session.user['refresh_token'], extras);
+      req.session.user = Object.assign(req.session.user, tokenset);
+      console.log('post-refresh req.session.user', req.session.user);
+      await req.session.save();
+      console.log('post-refresh session id', req.session.id);
+      next();
+    } catch (error) {
+      res.render('error', { error: error, user: req.session.user, header: "Error" });
+      next(error);
+    }
+  }, (req, res, next) => {
+    res.redirect('/');
   });
   
-  app.get('/logout', (req, res, done) => {
+  app.get('/logout', (req, res, next) => {
     req.session.destroy();
     res.redirect('/');
-    done();
+    next();
   });
+
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
 const client = createClient();
 configurePassport(client);
 startApp(client);
-//createClient().then(configurePassport).then(startApp);
-//var client = configurePassport(createClient())
-//startApp(client);
-

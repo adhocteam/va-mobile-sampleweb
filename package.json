@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "VA Mobile API Client as a web app",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node -r dotenv/config ."
   },
   "repository": {
     "type": "git",
@@ -20,6 +21,7 @@
     "node": "14.x"
   },
   "dependencies": {
+    "dotenv": "^9.0.2",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
     "express-session-rsdb": "^0.1.7",

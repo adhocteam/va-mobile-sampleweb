@@ -32,7 +32,9 @@ port 4001.
 # Running Locally
 
 ```
+Add .env file with CLIENT_SECRET= to top directory
+
 $ npm install
-$ node index.js
+$ npm start
 
 ```

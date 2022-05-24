@@ -146,7 +146,6 @@ function startApp(client) {
   });
 
   app.get('/messaging/:folderId', requireLogin, async (req, res, next) => {
-    debugger;
     const options = {
       url: API_URL + `/mobile/v0/messaging/health/folders/${req.params.folderId}/messages`,
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
@@ -169,10 +168,6 @@ function startApp(client) {
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );
-  app.get('/auth/login-success', (req,res,next) => {
-    debugger;
-    next();
-  });
   app.get('/auth/login-success', passport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.user);

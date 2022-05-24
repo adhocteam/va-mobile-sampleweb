@@ -169,7 +169,7 @@ function startApp(client) {
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );
-  app.get('/auth/login-succss', (req,res,next) => {
+  app.get('/auth/login-success', (req,res,next) => {
     debugger;
     next();
   });

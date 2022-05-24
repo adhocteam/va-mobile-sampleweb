@@ -36,3 +36,15 @@ $ npm install
 $ node index.js
 
 ```
+
+# Debugging in Heroku
+
+A VSCode debugging configuration is checked in under .vscode/launch.json that configures 
+VSCode to attach a debugger on port 9229. It is possible to debug the 
+app while it is running in Heroku by running the following commands from the root project directory:
+```
+$ heroku ps:exec
+# In a separate terminal window
+$ heroku ps:forward 9229
+```
+then using VSCode's normal debugging functionality.

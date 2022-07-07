@@ -20,7 +20,7 @@ const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
   const ssoeIssuer = new Issuer({
-    issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPeFP',
+    issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
     authorization_endpoint: OAUTH_URL,
     token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
     jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',

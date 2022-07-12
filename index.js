@@ -37,7 +37,9 @@ function createClient() {
   });
 }
 
-function configurePassport(client) {
+function configureSisPassport() {
+  console.log("configuring")
+  client = createClient()
   passport.serializeUser(function(user, done) {
     done(null, user);
   });
@@ -50,8 +52,9 @@ function configurePassport(client) {
     {
       client,
       params: {
-        scope: 'openid',
-        response_mode: 'query',
+        // scope: 'openid',
+        // response_mode: 'query',
+        client_id: 'mobile'
       },
       usePKCE: true,
       // SSOE oAuth seems to require these parameters for token exchange
@@ -78,7 +81,10 @@ function configurePassport(client) {
       return done(null, user);
     }
   ));
+  passport.initialize()
+  passport.session()
 
+  console.log('configured')
   return client;
 }
 
@@ -90,7 +96,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-function startApp(client) {
+function startApp() {
   const app = express();
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
@@ -103,8 +109,6 @@ function startApp(client) {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
-  app.use(passport.initialize());
-  app.use(passport.session());
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);
@@ -169,6 +173,10 @@ function startApp(client) {
     }
   );
 
+  app.use('/auth/sis', function(req, res,next) {
+    configureSisPassport()
+    next()
+  })
   app.get('/auth/sis', passport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.session.user, req.user);
@@ -215,6 +223,4 @@ function startApp(client) {
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
-const client = createClient();
-configurePassport(client);
-startApp(client);
+startApp();

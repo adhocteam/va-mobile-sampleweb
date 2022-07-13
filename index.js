@@ -15,13 +15,34 @@ const API_URL = process.env.API_URL || 'https://staging-api.va.gov'
 const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
-const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+// const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+const SIS_OAUTH_URL="https://staging.va.gov/sign-in?application=vamobile&code_challenge=1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM=&code_challenge_method=S256&oauth=true&client_id=mobile"
+const CALLBACK_URL = 'vamobile://login-success';
 
-function createClient() {
+// const AUTH_TOKEN_EXCHANGE_URL=`https://${API_PREFIX}va.gov/v0/sign_in/token`
+// const AUTH_TOKEN_REFRESH_URL=`https://${API_PREFIX}va.gov/v0/sign_in/refresh`
+// const AUTH_REVOKE_URL=`https://${API_PREFIX}va.gov/v0/sign_in/revoke`
+
+
+function createClient(type) {
+  var callback_url = null;
+  var oauth_url = null;
+
+  switch (type) {
+    case ('iam'):
+      oauth_url = OAUTH_URL
+      callback_url = CALLBACK_URL
+      break;
+    case ('sis'):
+      oauth_url = SIS_OAUTH_URL
+      callback_url = CALLBACK_URL
+      break;
+  }
+
   Issuer.defaultHttpOptions = { timeout: 5000 };
   const ssoeIssuer = new Issuer({
     issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
-    authorization_endpoint: OAUTH_URL,
+    authorization_endpoint: oauth_url,
     token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
     jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
     //Advertised in  metadata but seemingly not supported
@@ -31,15 +52,32 @@ function createClient() {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      CALLBACK_URL,
+      callback_url,
     ],
     response_types: ['code'],
   });
 }
 
-function configureSisPassport() {
+function configurePassport(type) {
   console.log("configuring")
-  client = createClient()
+  var params = null;
+
+  switch (type) {
+    case ('iam'):
+      params = {
+        scope: 'openid',
+        response_mode: 'query',
+      }
+      break;
+    case ('sis'):
+      params = {
+        client_id: 'mobile'
+      }
+      break;
+  }
+
+  const client = createClient(type)
+
   passport.serializeUser(function(user, done) {
     done(null, user);
   });
@@ -51,11 +89,7 @@ function configureSisPassport() {
   passport.use('oidc', new Strategy(
     {
       client,
-      params: {
-        // scope: 'openid',
-        // response_mode: 'query',
-        client_id: 'mobile'
-      },
+      params: params,
       usePKCE: true,
       // SSOE oAuth seems to require these parameters for token exchange
       // even in PKCE mode, so add them here
@@ -167,18 +201,26 @@ function startApp() {
     }
   });
 
+  app.use('/auth/iam', function(req, res, next) {
+    configurePassport('iam');
+    next();
+  })
   app.get('/auth/iam', passport.authenticate('oidc'),
     function(req, res) {
+      console.log("IAM REQ ", req)
+      console.log("IAM RES ", res)
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );
 
-  app.use('/auth/sis', function(req, res,next) {
-    configureSisPassport()
-    next()
+  app.use('/auth/sis', function(req, res, next) {
+    configurePassport('sis');
+    next();
   })
   app.get('/auth/sis', passport.authenticate('oidc'),
     function(req, res) {
+      console.log("SIS REQ ", req)
+      console.log("SIS RES ", res)
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );

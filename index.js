@@ -91,7 +91,7 @@ function configurePassport(type) {
     {
       client,
       params: params,
-      usePKCE: true,
+      // usePKCE: true,
       // SSOE oAuth seems to require these parameters for token exchange
       // even in PKCE mode, so add them here
       extras: {

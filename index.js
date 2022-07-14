@@ -31,11 +31,11 @@ function createClient(type) {
   switch (type) {
     case ('iam'):
       oauth_url = OAUTH_URL
-      callback_url = 'https://va-mobile-cutter.herokuapp.com/auth/iam/login-success'
+      callback_url = CALLBACK_URL
       break;
     case ('sis'):
       oauth_url = SIS_OAUTH_URL
-      callback_url = 'https://va-mobile-cutter.herokuapp.com/auth/sis/login-success'
+      callback_url = CALLBACK_URL
       break;
   }
 

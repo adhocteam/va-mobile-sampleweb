@@ -15,9 +15,9 @@ const API_URL = process.env.API_URL || 'https://staging-api.va.gov'
 const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
-// const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
-const SIS_OAUTH_URL="https://staging.va.gov/sign-in?application=vamobile&code_challenge=1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM=&code_challenge_method=S256&oauth=true&client_id=mobile"
-const CALLBACK_URL = 'vamobile://login-success';
+const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+const SIS_OAUTH_URL='https://staging.va.gov/sign-in?application=vamobile&code_challenge=1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM=&code_challenge_method=S256&oauth=true&client_id=mobile'
+
 
 // const AUTH_TOKEN_EXCHANGE_URL=`https://${API_PREFIX}va.gov/v0/sign_in/token`
 // const AUTH_TOKEN_REFRESH_URL=`https://${API_PREFIX}va.gov/v0/sign_in/refresh`
@@ -143,6 +143,10 @@ function startApp() {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
+  app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).send('Something broke!')
+  })
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);

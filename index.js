@@ -67,6 +67,7 @@ function configurePassport(type) {
       params = {
         scope: 'openid',
         response_mode: 'query',
+        test: 'boop'
       }
       break;
     case ('sis'):
@@ -75,7 +76,8 @@ function configurePassport(type) {
         code_challenge: '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM',
         code_challenge_method: 'S256',
         oauth: 'true',
-        client_id: 'mobile'
+        client_id: 'mobile',
+        experimental: 'weirdness'
       }
       break;
   }
@@ -105,6 +107,8 @@ function configurePassport(type) {
       }
     },
     (tokenset, done) => {
+      console.log("Payload", payload)
+      console.log("Token set", tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
       user = Object.assign(payload, tokenset);
       if (process.env.VERBOSE === 'true') {

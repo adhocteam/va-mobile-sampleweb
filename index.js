@@ -25,17 +25,14 @@ const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 
 
 function createClient(type) {
-  var callback_url = null;
   var oauth_url = null;
 
   switch (type) {
     case ('iam'):
       oauth_url = OAUTH_URL
-      callback_url = CALLBACK_URL
       break;
     case ('sis'):
       oauth_url = SIS_OAUTH_URL
-      callback_url = CALLBACK_URL
       break;
   }
 
@@ -52,7 +49,7 @@ function createClient(type) {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      callback_url,
+      CALLBACK_URL,
     ],
     response_types: ['code'],
   });
@@ -66,8 +63,7 @@ function configurePassport(type) {
     case ('iam'):
       params = {
         scope: 'openid',
-        response_mode: 'query',
-        test: 'boop'
+        response_mode: 'query'
       }
       break;
     case ('sis'):
@@ -76,8 +72,7 @@ function configurePassport(type) {
         code_challenge: '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM',
         code_challenge_method: 'S256',
         oauth: 'true',
-        client_id: 'mobile',
-        experimental: 'weirdness'
+        client_id: 'mobile'
       }
       break;
   }
@@ -107,7 +102,6 @@ function configurePassport(type) {
       }
     },
     (tokenset, done) => {
-      console.log("Payload", payload)
       console.log("Token set", tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
       user = Object.assign(payload, tokenset);

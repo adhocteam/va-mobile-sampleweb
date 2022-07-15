@@ -18,12 +18,6 @@ const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 
-
-// const AUTH_TOKEN_EXCHANGE_URL=`https://${API_PREFIX}va.gov/v0/sign_in/token`
-// const AUTH_TOKEN_REFRESH_URL=`https://${API_PREFIX}va.gov/v0/sign_in/refresh`
-// const AUTH_REVOKE_URL=`https://${API_PREFIX}va.gov/v0/sign_in/revoke`
-
-
 function createClient(type) {
   var oauth_url = null;
 
@@ -56,7 +50,7 @@ function createClient(type) {
 }
 
 function configurePassport(type) {
-  console.log("configuring")
+  console.log("configuring", type)
   var params = null;
   var pkce = null;
 
@@ -83,10 +77,12 @@ function configurePassport(type) {
   const client = createClient(type)
 
   passport.serializeUser(function(user, done) {
+    console.log("Serializing user", user)
     done(null, user);
   });
 
   passport.deserializeUser(function(user, done) {
+    console.log("Deserializing user", user)
     done(null, user);
   });
 
@@ -107,7 +103,10 @@ function configurePassport(type) {
     (tokenset, done) => {
       console.log("Token set", tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
+      console.log('id_token', payload);
       user = Object.assign(payload, tokenset);
+      console.log('user', user);
+
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
         console.log('id_token', payload);
@@ -116,13 +115,14 @@ function configurePassport(type) {
         console.log('user.icn', user.fediamMVIICN);
         console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       }
+      console.log('DONE')
       return done(null, user);
     }
   ));
   passport.initialize()
   passport.session()
 
-  console.log('configured')
+  console.log('configured', type)
   return client;
 }
 

@@ -58,6 +58,7 @@ function createClient(type) {
 function configurePassport(type) {
   console.log("configuring")
   var params = null;
+  var pkce = null;
 
   switch (type) {
     case ('iam'):
@@ -65,6 +66,7 @@ function configurePassport(type) {
         scope: 'openid',
         response_mode: 'query'
       }
+      pkce = true;
       break;
     case ('sis'):
       params = {
@@ -74,6 +76,7 @@ function configurePassport(type) {
         oauth: 'true',
         client_id: 'mobile'
       }
+      pkce = false;
       break;
   }
 
@@ -91,7 +94,7 @@ function configurePassport(type) {
     {
       client,
       params: params,
-      usePKCE: false,
+      usePKCE: pkce,
       // SSOE oAuth seems to require these parameters for token exchange
       // even in PKCE mode, so add them here
       extras: {
@@ -108,8 +111,7 @@ function configurePassport(type) {
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
         console.log('id_token', payload);
-      }
-      else {
+      } else {
         console.log('user.name', user.email);
         console.log('user.icn', user.fediamMVIICN);
         console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));

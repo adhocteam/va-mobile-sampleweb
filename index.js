@@ -220,7 +220,7 @@ function startApp() {
   //   configurePassport('iam');
   //   next();
   // })
-  app.get('/auth/iam', passport.authenticate('oidc'),
+  app.get('/auth/iam', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
       console.log("IAM RES ", res)
@@ -232,7 +232,7 @@ function startApp() {
   //   configurePassport('sis');
   //   next();
   // })
-  app.get('/auth/sis', passport.authenticate('oidc'),
+  app.get('/auth/sis', sisPassport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
       console.log("SIS RES ", res)
@@ -240,7 +240,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/login-success', passport.authenticate('oidc'),
+  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.user);
       res.redirect('/');

@@ -153,11 +153,11 @@ function startApp() {
   iamPassport.initialize()
   iamPassport.session()
 
-  // const sisClient = createClient('sis')
-  // const sisPassport = new passport.Authenticator()
-  // configurePassport('sis', sisClient, sisPassport)
-  // sisPassport.initialize()
-  // sisPassport.session()
+  const sisClient = createClient('sis')
+  const sisPassport = new passport.Authenticator()
+  configurePassport('sis', sisClient, sisPassport)
+  sisPassport.initialize()
+  sisPassport.session()
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);
@@ -232,15 +232,15 @@ function startApp() {
   //   configurePassport('sis');
   //   next();
   // })
-  // app.get('/auth/sis', sisPassport.authenticate('oidc'),
-  //   function(req, res) {
-  //     console.log("SIS REQ ", req)
-  //     console.log("SIS RES ", res)
-  //     req.session.user = Object.assign(req.session.user, req.user);
-  //   }
-  // );
+  app.get('/auth/sis', sisPassport.authenticate('oidc'),
+    function(req, res) {
+      console.log("SIS REQ ", req)
+      console.log("SIS RES ", res)
+      req.session.user = Object.assign(req.session.user, req.user);
+    }
+  );
 
-  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
+  app.get('/auth/login-success', sisPassport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.user);
       res.redirect('/');

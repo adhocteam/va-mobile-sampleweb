@@ -49,7 +49,7 @@ function createClient(type) {
   });
 }
 
-function configurePassport(type) {
+function configurePassport(type, client, typePassport) {
   console.log("configuring", type)
   var params = null;
   var pkce = null;
@@ -74,19 +74,17 @@ function configurePassport(type) {
       break;
   }
 
-  const client = createClient(type)
-
-  passport.serializeUser(function(user, done) {
+  typePassport.serializeUser(function(user, done) {
     console.log("Serializing user", user)
     done(null, user);
   });
 
-  passport.deserializeUser(function(user, done) {
+  typePassport.deserializeUser(function(user, done) {
     console.log("Deserializing user", user)
     done(null, user);
   });
 
-  passport.use('oidc', new Strategy(
+  typePassport.use('oidc', new Strategy(
     {
       client,
       params: params,
@@ -119,11 +117,8 @@ function configurePassport(type) {
       return done(null, user);
     }
   ));
-  passport.initialize()
-  passport.session()
 
   console.log('configured', type)
-  return client;
 }
 
 function requireLogin(req, res, next) {
@@ -151,6 +146,18 @@ function startApp() {
     console.error(err.stack)
     res.status(500).send('Something broke!')
   })
+
+  const iamClient = createClient('iam')
+  const iamPassport = new passport.Authenticator()
+  configurePassport('iam', iamClient, iamPassport)
+  iamPassport.initialize()
+  iamPassport.session()
+
+  const sisClient = createClient('sis')
+  const sisPassport = new passport.Authenticator()
+  configurePassport('sis', sisClient, sisPassport)
+  sisPassport.initialize()
+  sisPassport.session()
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);
@@ -209,10 +216,10 @@ function startApp() {
     }
   });
 
-  app.use('/auth/iam', function(req, res, next) {
-    configurePassport('iam');
-    next();
-  })
+  // app.use('/auth/iam', function(req, res, next) {
+  //   configurePassport('iam');
+  //   next();
+  // })
   app.get('/auth/iam', passport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
@@ -221,10 +228,10 @@ function startApp() {
     }
   );
 
-  app.use('/auth/sis', function(req, res, next) {
-    configurePassport('sis');
-    next();
-  })
+  // app.use('/auth/sis', function(req, res, next) {
+  //   configurePassport('sis');
+  //   next();
+  // })
   app.get('/auth/sis', passport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)

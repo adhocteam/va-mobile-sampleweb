@@ -17,6 +17,7 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
+const SIS_CALLBACK_URL='https://staging-api.va.gov/v0/sign_in/token'
 
 function createClient(type) {
   var oauth_url = null;
@@ -43,7 +44,7 @@ function createClient(type) {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      CALLBACK_URL,
+      SIS_CALLBACK_URL,
     ],
     response_types: ['code'],
   });
@@ -64,6 +65,8 @@ function configurePassport(type, client, typePassport) {
       break;
     case ('sis'):
       params = {
+        scope: 'openid',
+        response_mode: 'query',
         application: 'vamobile',
         code_challenge: '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM',
         code_challenge_method: 'S256',
@@ -242,6 +245,8 @@ function startApp() {
 
   app.get('/auth/login-success', sisPassport.authenticate('oidc'),
     function(req, res) {
+      console.log("CALLBACK REQ ", req)
+      console.log("CALLBACK RES ", res)
       req.session.user = Object.assign(req.user);
       res.redirect('/');
     }

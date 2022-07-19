@@ -231,7 +231,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/sis', sisPassport.authenticate('oidc'),
+  app.get('/auth/sis', passport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
       console.log("SIS RES ", res)

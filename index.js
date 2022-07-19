@@ -17,7 +17,7 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
-const SIS_CALLBACK_URL='https://staging-api.va.gov/v0/sign_in/token'
+const SIS_TOKEN_URL='https://staging-api.va.gov/v0/sign_in/callback'
 
 function createClient(type) {
   var oauth_url = null;
@@ -44,7 +44,7 @@ function createClient(type) {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      SIS_CALLBACK_URL,
+      CALLBACK_URL,
     ],
     response_types: ['code'],
   });
@@ -149,6 +149,10 @@ function startApp() {
     console.error(err.stack)
     res.status(500).send('Something broke!')
   })
+  process.on('uncaughtException', err => {
+    console.error('There was an uncaught error', err);
+    process.exit(1); // mandatory (as per the Node.js docs)
+  });
 
   const iamClient = createClient('iam')
   const iamPassport = new passport.Authenticator()
@@ -243,7 +247,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/login-success', sisPassport.authenticate('oidc'),
+  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("CALLBACK REQ ", req)
       console.log("CALLBACK RES ", res)

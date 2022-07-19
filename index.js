@@ -53,6 +53,8 @@ function createClient(type) {
 function configurePassport(type) {
   console.log("configuring", type)
 
+  const typedPassport = new passport.Authenticator()
+
   var params = null;
   var pkce = null;
 
@@ -78,19 +80,19 @@ function configurePassport(type) {
       break;
   }
 
-  passport.serializeUser(function(user, done) {
+  typedPassport.serializeUser(function(user, done) {
     console.log("Serializing user", user)
     done(null, user);
   });
 
-  passport.deserializeUser(function(user, done) {
+  typedPassport.deserializeUser(function(user, done) {
     console.log("Deserializing user", user)
     done(null, user);
   });
 
   const client = createClient(type)
 
-  passport.use('oidc', new Strategy(
+  typedPassport.use('oidc', new Strategy(
     {
       client,
       params: params,
@@ -122,6 +124,8 @@ function configurePassport(type) {
   ));
 
   console.log('configured', type)
+
+  return typedPassport
 }
 
 function requireLogin(req, res, next) {
@@ -132,7 +136,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-function startApp() {
+function startApp(iamPassport, sisPassport) {
   const app = express();
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
@@ -145,8 +149,10 @@ function startApp() {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
-  app.use(passport.initialize());
-  app.use(passport.session());
+  app.use(iamPassport.initialize());
+  app.use(iamPassport.session());
+  app.use(sisPassport.initialize());
+  app.use(sisPassport.session());
   app.use((err, req, res, next) => {
     console.error(err.stack)
     res.status(500).send('Something broke!')
@@ -213,11 +219,11 @@ function startApp() {
     }
   });
 
-  app.use('/auth/iam', function(req, res, next) {
-    configurePassport('iam');
-    next();
-  })
-  app.get('/auth/iam', passport.authenticate('oidc'),
+  // app.use('/auth/iam', function(req, res, next) {
+  //   configurePassport('iam');
+  //   next();
+  // })
+  app.get('/auth/iam', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
       console.log("IAM RES ", res)
@@ -225,11 +231,11 @@ function startApp() {
     }
   );
 
-  app.use('/auth/sis', function(req, res, next) {
-    configurePassport('sis');
-    next();
-  })
-  app.get('/auth/sis', passport.authenticate('oidc'),
+  // app.use('/auth/sis', function(req, res, next) {
+  //   configurePassport('sis');
+  //   next();
+  // })
+  app.get('/auth/sis', sisPassport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
       console.log("SIS RES ", res)
@@ -237,7 +243,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/login-success', passport.authenticate('oidc'),
+  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("CALLBACK REQ ", req)
       console.log("CALLBACK RES ", res)
@@ -279,4 +285,7 @@ function startApp() {
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
-startApp();
+const iamPassport = configurePassport('iam');
+const sisPassport = configurePassport('sis');
+
+startApp(iamPassport, sisPassport);

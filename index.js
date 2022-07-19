@@ -105,7 +105,6 @@ function configurePassport(type) {
       }
     },
     (tokenset, done) => {
-      console.log("Token set", tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
       user = Object.assign(payload, tokenset);
 

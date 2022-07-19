@@ -107,9 +107,7 @@ function configurePassport(type) {
     (tokenset, done) => {
       console.log("Token set", tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
-      console.log('id_token', payload);
       user = Object.assign(payload, tokenset);
-      console.log('user', user);
 
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
@@ -119,7 +117,7 @@ function configurePassport(type) {
         console.log('user.icn', user.fediamMVIICN);
         console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       }
-      console.log('DONE')
+
       return done(null, user);
     }
   ));

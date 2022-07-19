@@ -231,13 +231,13 @@ function startApp(iamPassport) {
     }
   );
 
-  app.get('/auth/sis', sisPassport.authenticate('oidc'),
-    function(req, res) {
-      console.log("SIS REQ ", req)
-      console.log("SIS RES ", res)
-      req.session.user = Object.assign(req.session.user, req.user);
-    }
-  );
+  // app.get('/auth/sis', sisPassport.authenticate('oidc'),
+  //   function(req, res) {
+  //     console.log("SIS REQ ", req)
+  //     console.log("SIS RES ", res)
+  //     req.session.user = Object.assign(req.session.user, req.user);
+  //   }
+  // );
 
   app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     function(req, res) {

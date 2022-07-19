@@ -221,7 +221,7 @@ function startApp() {
     configurePassport('iam');
     next();
   })
-  app.get('/auth/iam', iamPassport.authenticate('oidc'),
+  app.get('/auth/iam', passport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
       console.log("IAM RES ", res)

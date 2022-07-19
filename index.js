@@ -50,8 +50,9 @@ function createClient(type) {
   });
 }
 
-function configurePassport(type, client, typePassport) {
+function configurePassport(type, client) {
   console.log("configuring", type)
+  const typePassport = new passport.Authenticator()
   var params = null;
   var pkce = null;
 
@@ -122,6 +123,8 @@ function configurePassport(type, client, typePassport) {
   ));
 
   console.log('configured', type)
+
+  return typePassport
 }
 
 function requireLogin(req, res, next) {
@@ -132,7 +135,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-function startApp() {
+function startApp(iamPassport) {
   const app = express();
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
@@ -154,11 +157,8 @@ function startApp() {
     process.exit(1); // mandatory (as per the Node.js docs)
   });
 
-  const iamClient = createClient('iam')
-  // const passport = new passport.Authenticator()
-  configurePassport('iam', iamClient, passport)
-  passport.initialize()
-  passport.session()
+  iamPassport.initialize()
+  iamPassport.session()
 
   // const sisClient = createClient('sis')
   // const sisPassport = new passport.Authenticator()
@@ -223,7 +223,7 @@ function startApp() {
     }
   });
 
-  app.get('/auth/iam', passport.authenticate('oidc'),
+  app.get('/auth/iam', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
       console.log("IAM RES ", res)
@@ -231,7 +231,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/sis', passport.authenticate('oidc'),
+  app.get('/auth/sis', sisPassport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
       console.log("SIS RES ", res)
@@ -239,7 +239,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/login-success', passport.authenticate('oidc'),
+  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("CALLBACK REQ ", req)
       console.log("CALLBACK RES ", res)
@@ -281,4 +281,6 @@ function startApp() {
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
-startApp();
+const iamClient = createClient('iam')
+const iamPassport = configurePassport('iam', iamClient)
+startApp(iamPassport);

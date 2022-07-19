@@ -155,16 +155,16 @@ function startApp() {
   });
 
   const iamClient = createClient('iam')
-  const iamPassport = new passport.Authenticator()
-  configurePassport('iam', iamClient, iamPassport)
-  iamPassport.initialize()
-  iamPassport.session()
+  // const passport = new passport.Authenticator()
+  configurePassport('iam', iamClient, passport)
+  passport.initialize()
+  passport.session()
 
-  const sisClient = createClient('sis')
-  const sisPassport = new passport.Authenticator()
-  configurePassport('sis', sisClient, sisPassport)
-  sisPassport.initialize()
-  sisPassport.session()
+  // const sisClient = createClient('sis')
+  // const sisPassport = new passport.Authenticator()
+  // configurePassport('sis', sisClient, sisPassport)
+  // sisPassport.initialize()
+  // sisPassport.session()
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);
@@ -223,11 +223,7 @@ function startApp() {
     }
   });
 
-  // app.use('/auth/iam', function(req, res, next) {
-  //   configurePassport('iam');
-  //   next();
-  // })
-  app.get('/auth/iam', iamPassport.authenticate('oidc'),
+  app.get('/auth/iam', passport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
       console.log("IAM RES ", res)
@@ -235,10 +231,6 @@ function startApp() {
     }
   );
 
-  // app.use('/auth/sis', function(req, res, next) {
-  //   configurePassport('sis');
-  //   next();
-  // })
   app.get('/auth/sis', sisPassport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
@@ -247,7 +239,7 @@ function startApp() {
     }
   );
 
-  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
+  app.get('/auth/login-success', passport.authenticate('oidc'),
     function(req, res) {
       console.log("CALLBACK REQ ", req)
       console.log("CALLBACK RES ", res)

@@ -121,9 +121,6 @@ function configurePassport(type) {
     }
   ));
 
-  passport.initialize()
-  passport.session()
-
   console.log('configured', type)
 }
 
@@ -148,6 +145,8 @@ function startApp() {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
+  app.use(passport.initialize());
+  app.use(passport.session());
   app.use((err, req, res, next) => {
     console.error(err.stack)
     res.status(500).send('Something broke!')

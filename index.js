@@ -10,15 +10,18 @@ const shajs = require('sha.js');
 const jose = require('jose');
 
 const secret = 'setec astronomy'
-const OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
 const API_URL = process.env.API_URL || 'https://staging-api.va.gov'
 const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
-const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+
+const IAM_OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
+const IAM_CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+const IAM_TOKEN_URL = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token'
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 // const SIS_CALLBACK_URL='https://staging-api.va.gov/v0/sign_in/callback'
 const SIS_CALLBACK_URL='vamobile://login-success'
+const SIS_TOKEN_URL = 'https://staging-api.va.gov/v0/sign_in/token'
 
 function createClient(type) {
   var oauth_url = null;
@@ -27,14 +30,14 @@ function createClient(type) {
 
   switch (type) {
     case ('iam'):
-      oauth_url = OAUTH_URL;
-      callback_url = CALLBACK_URL;
-      token_endpoint = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token';
+      oauth_url = IAM_OAUTH_URL;
+      callback_url = IAM_CALLBACK_URL;
+      token_endpoint = IAM_TOKEN_URL;
       break;
     case ('sis'):
       oauth_url = SIS_OAUTH_URL;
       callback_url = SIS_CALLBACK_URL;
-      token_endpoint = 'https://staging-api.va.gov/v0/sign_in/token'
+      token_endpoint = SIS_TOKEN_URL;
       break;
   }
 
@@ -75,13 +78,11 @@ function configurePassport(type) {
       break;
     case ('sis'):
       params = {
-        scope: 'openid',
-        response_mode: 'query',
         application: 'vamobile',
         code_challenge: '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM',
         code_challenge_method: 'S256',
         oauth: 'true',
-        client_id: 'mobile'
+        client_id: 'web'
       }
       pkce = false;
       break;
@@ -266,7 +267,7 @@ function startApp(iamPassport, sisPassport) {
         exchangeBody: {
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
-          redirect_uri: CALLBACK_URL,
+          redirect_uri: IAM_CALLBACK_URL,
         }
       }
       console.log('Refreshing with', req.session.user['refresh_token']);

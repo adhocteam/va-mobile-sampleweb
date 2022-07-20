@@ -17,17 +17,24 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
-const SIS_TOKEN_URL='https://staging-api.va.gov/v0/sign_in/callback'
+// const SIS_CALLBACK_URL='https://staging-api.va.gov/v0/sign_in/callback'
+const SIS_CALLBACK_URL='vamobile://login-success'
 
 function createClient(type) {
   var oauth_url = null;
+  var callback_url = null;
+  var token_endpoint = null;
 
   switch (type) {
     case ('iam'):
-      oauth_url = OAUTH_URL
+      oauth_url = OAUTH_URL;
+      callback_url = CALLBACK_URL;
+      token_endpoint = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token';
       break;
     case ('sis'):
-      oauth_url = SIS_OAUTH_URL
+      oauth_url = SIS_OAUTH_URL;
+      callback_url = SIS_CALLBACK_URL;
+      token_endpoint = 'https://staging-api.va.gov/v0/sign_in/token'
       break;
   }
 
@@ -35,7 +42,7 @@ function createClient(type) {
   const ssoeIssuer = new Issuer({
     issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
     authorization_endpoint: oauth_url,
-    token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
+    token_endpoint: token_endpoint,
     jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
     //Advertised in  metadata but seemingly not supported
     // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
@@ -44,7 +51,7 @@ function createClient(type) {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      CALLBACK_URL,
+      callback_url,
     ],
     response_types: ['code'],
   });
@@ -107,6 +114,7 @@ function configurePassport(type) {
       }
     },
     (tokenset, done) => {
+      console.log('TOKEN', tokenset)
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
       user = Object.assign(payload, tokenset);
 

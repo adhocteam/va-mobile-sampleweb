@@ -287,6 +287,7 @@ function startApp(iamPassport, sisPassport) {
         }
       }
       console.log('Refreshing with', req.params.refreshToken);
+      const client = createClient('iam')
       var tokenset = await client.refresh(req.params.refreshToken, extras);
       console.log('TokenSet', tokenset);
       next(tokenset);

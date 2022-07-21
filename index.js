@@ -60,7 +60,7 @@ function createClient(type) {
   });
 }
 
-function configurePassport(type) {
+function configurePassport(client, type) {
   console.log("configuring", type)
 
   const typedPassport = new passport.Authenticator()
@@ -97,8 +97,6 @@ function configurePassport(type) {
     console.log("Deserializing user", user)
     done(null, user);
   });
-
-  const client = createClient(type)
 
   typedPassport.use('oidc', new Strategy(
     {
@@ -145,7 +143,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-function startApp(iamPassport, sisPassport) {
+function startApp() {
   const app = express();
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
@@ -158,6 +156,11 @@ function startApp(iamPassport, sisPassport) {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
+
+  const iamClient = createClient('iam')
+  const iamPassport = configurePassport(iamClient, 'iam');
+  const sisClient = createClient('sis')
+  const sisPassport = configurePassport(sisClient, 'sis');
   app.use(iamPassport.initialize());
   app.use(iamPassport.session());
   app.use(sisPassport.initialize());
@@ -287,8 +290,7 @@ function startApp(iamPassport, sisPassport) {
         }
       }
       console.log('Refreshing with', req.params.refreshToken);
-      const client = createClient('iam')
-      var tokenset = await client.refresh(req.params.refreshToken, extras);
+      var tokenset = await iamClient.refresh(req.params.refreshToken, extras);
       console.log('TokenSet', tokenset);
       res.send({ access_token: tokenset.access_token }).status(200);
       next()
@@ -309,7 +311,4 @@ function startApp(iamPassport, sisPassport) {
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
-const iamPassport = configurePassport('iam');
-const sisPassport = configurePassport('sis');
-
-startApp(iamPassport, sisPassport);
+startApp();

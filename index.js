@@ -228,10 +228,6 @@ function startApp(iamPassport, sisPassport) {
     }
   });
 
-  // app.use('/auth/iam', function(req, res, next) {
-  //   configurePassport('iam');
-  //   next();
-  // })
   app.get('/auth/iam', iamPassport.authenticate('oidc'),
     function(req, res) {
       console.log("IAM REQ ", req)
@@ -240,10 +236,6 @@ function startApp(iamPassport, sisPassport) {
     }
   );
 
-  // app.use('/auth/sis', function(req, res, next) {
-  //   configurePassport('sis');
-  //   next();
-  // })
   app.get('/auth/sis', sisPassport.authenticate('oidc'),
     function(req, res) {
       console.log("SIS REQ ", req)
@@ -283,6 +275,28 @@ function startApp(iamPassport, sisPassport) {
     }
   }, (req, res, next) => {
     res.redirect('/');
+  });
+
+  app.get('/auth/iam/refresh/:refreshToken', async (req, res, next) => {
+    try {
+      const extras = {
+        exchangeBody: {
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          redirect_uri: IAM_CALLBACK_URL,
+        }
+      }
+      console.log('Refreshing with', req.params.refreshToken);
+      var tokenset = await client.refresh(req.params.refreshToken, extras);
+      console.log('TokenSet', tokenset);
+      next(tokenset);
+    } catch (error) {
+      res.render('error', { error: error, header: "Error" });
+      next(error);
+    }
+  }, (req, res, next) => {
+    console.log('REFRESH RES', res)
+    res.send({ access_token: res.access_token }).status(200);
   });
 
   app.get('/logout', (req, res, next) => {

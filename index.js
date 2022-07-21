@@ -290,14 +290,14 @@ function startApp(iamPassport, sisPassport) {
       const client = createClient('iam')
       var tokenset = await client.refresh(req.params.refreshToken, extras);
       console.log('TokenSet', tokenset);
-      next(tokenset);
+      res.send({ access_token: tokenset.access_token }).status(200);
+      next()
     } catch (error) {
       res.render('error', { error: error, header: "Error" });
       next(error);
     }
   }, (req, res, next) => {
     console.log('REFRESH RES', res)
-    res.send({ access_token: res.access_token }).status(200);
   });
 
   app.get('/logout', (req, res, next) => {

@@ -62,15 +62,14 @@ function configurePassport(client) {
           client_secret: CLIENT_SECRET,
         },
       }
-    }, 
+    },
     (tokenset, done) => {
       ({ payload } = jose.JWT.decode(tokenset.id_token, { complete: true }));
       user = Object.assign(payload, tokenset);
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
         console.log('id_token', payload);
-      }
-      else {
+      } else {
         console.log('user.name', user.email);
         console.log('user.icn', user.fediamMVIICN);
         console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
@@ -117,28 +116,28 @@ function startApp(client) {
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     try {
-    const response = await request(options);
-    const output = JSON.stringify(JSON.parse(response), undefined, 2);
-    const locals = { userinfo: output, user: req.session.user, header: 'User Info' };
-    locals['activeUser'] = true;
+      const response = await request(options);
+      const output = JSON.stringify(JSON.parse(response), undefined, 2);
+      const locals = { userinfo: output, user: req.session.user, header: 'User Info' };
+      locals['activeUser'] = true;
       res.render('user', locals);
     } catch (error) {
       res.render('error', { error: error, user: req.session.user, header: "Error" });
     }
   });
-  
+
   app.get('/messaging', requireLogin, async (req, res, next) => {
     const options = {
       url: API_URL + '/mobile/v0/messaging/health/folders',
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     try {
-    console.log('folders request', options);
-    const response = await request(options);
-    const raw = JSON.stringify(JSON.parse(response), undefined, 2);
-    const { data } = JSON.parse(response);
-    const locals = { folders: data, raw: raw, user: req.session.user, header: 'Messaging' };
-    locals['activeMessaging'] = true;
+      console.log('folders request', options);
+      const response = await request(options);
+      const raw = JSON.stringify(JSON.parse(response), undefined, 2);
+      const { data } = JSON.parse(response);
+      const locals = { folders: data, raw: raw, user: req.session.user, header: 'Messaging' };
+      locals['activeMessaging'] = true;
       res.render('folders', locals);
     } catch (error) {
       res.render('error', { error: error, user: req.session.user, header: "Error" });
@@ -151,12 +150,12 @@ function startApp(client) {
       headers: { 'Authorization': 'Bearer ' + req.session.user['access_token'] }
     };
     try {
-    console.log('folder request', options);
-    const response = await request(options);
-    const raw = JSON.stringify(JSON.parse(response), undefined, 2);
-    const { data } = JSON.parse(response)
-    const locals = { messages: data, raw: raw, user: req.session.user, header: 'Messaging' };
-    locals['activeMessaging'] = true;
+      console.log('folder request', options);
+      const response = await request(options);
+      const raw = JSON.stringify(JSON.parse(response), undefined, 2);
+      const { data } = JSON.parse(response)
+      const locals = { messages: data, raw: raw, user: req.session.user, header: 'Messaging' };
+      locals['activeMessaging'] = true;
       res.render('messages', locals);
     } catch (error) {
       res.render('error', { error: error, user: req.session.user, header: "Error" });
@@ -168,13 +167,14 @@ function startApp(client) {
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );
+
   app.get('/auth/login-success', passport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.user);
       res.redirect('/');
     }
   );
-  
+
   app.get('/auth/refresh', async (req, res, next) => {
     try {
       const extras = {
@@ -182,7 +182,7 @@ function startApp(client) {
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
           redirect_uri: CALLBACK_URL,
-        },
+        }
       }
       console.log('Refreshing with', req.session.user['refresh_token']);
       var tokenset = await client.refresh(req.session.user['refresh_token'], extras);
@@ -198,7 +198,27 @@ function startApp(client) {
   }, (req, res, next) => {
     res.redirect('/');
   });
-  
+
+  app.get('/auth/iam/token', async (req, res, next) => {
+    try {
+      const extras = {
+        exchangeBody: {
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          redirect_uri: IAM_CALLBACK_URL,
+        }
+      }
+      console.log('Refreshing with', req.params.refreshToken);
+      var tokenset = await iamClient.refresh(req.params.refreshToken, extras);
+      console.log('TokenSet', tokenset);
+      res.send({ access_token: tokenset.access_token }).status(200);
+      next()
+    } catch (error) {
+      res.render('error', { error: error, header: "Error" });
+      next(error);
+    }
+  });
+
   app.get('/logout', (req, res, next) => {
     req.session.destroy();
     res.redirect('/');

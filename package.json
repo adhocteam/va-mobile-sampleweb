@@ -21,11 +21,13 @@
   },
   "dependencies": {
     "express": "^4.17.1",
+    "express-basic-auth": "^1.2.1",
     "express-session": "^1.17.1",
     "express-session-rsdb": "^0.1.7",
     "hbs": "^4.2.0",
     "openid-client": "^4.4.0",
     "passport": "^0.4.1",
+    "pg": "^8.7.3",
     "request": "^2.88.2",
     "request-promise-native": "^1.0.9",
     "sha.js": "^2.4.11"

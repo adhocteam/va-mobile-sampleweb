@@ -206,7 +206,7 @@ function startApp(client) {
         exchangeBody: {
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
-          redirect_uri: IAM_CALLBACK_URL,
+          redirect_uri: CALLBACK_URL,
         }
       }
       console.log('Refreshing with', req.params.refreshToken);

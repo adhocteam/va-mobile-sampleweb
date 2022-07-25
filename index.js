@@ -39,6 +39,7 @@ function createClient() {
 
 function configurePassport(client) {
   passport.serializeUser(function(user, done) {
+    console.log('Serializing user: ', user)
     done(null, user);
   });
 

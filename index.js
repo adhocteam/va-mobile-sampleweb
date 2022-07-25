@@ -210,7 +210,7 @@ function startApp(client) {
         }
       }
       console.log('Refreshing with', req.params.refreshToken);
-      var tokenset = await iamClient.refresh(req.params.refreshToken, extras);
+      var tokenset = await client.refresh(req.params.refreshToken, extras);
       console.log('TokenSet', tokenset);
       res.send({ access_token: tokenset.access_token }).status(200);
       next()

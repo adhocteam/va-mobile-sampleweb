@@ -200,7 +200,7 @@ function startApp(client) {
     res.redirect('/');
   });
 
-  app.get('/auth/iam/token', async (req, res, next) => {
+  app.get('/auth/iam/token/:refreshToken', async (req, res, next) => {
     try {
       const extras = {
         exchangeBody: {

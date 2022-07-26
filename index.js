@@ -8,6 +8,7 @@ const request = require('request-promise-native');
 const hbs = require('hbs');
 const shajs = require('sha.js');
 const jose = require('jose');
+const { Client } = require('pg');
 
 const secret = 'setec astronomy'
 const OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
@@ -16,6 +17,15 @@ const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+
+const pgClient = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+pgClient.connect();
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };

@@ -29,6 +29,11 @@ custom mobile callback URL are:
 This means that you very likely want to run your app locally on the default 
 port 4001.
 
+# Database
+
+The database is used to store refresh tokens, which allows us to fetch api tokens without manually loggin in every time. The database schema can be found in schema.sql. To create the database, run:
+`heroku pg:psql DATABASE < schema.sql`
+
 # Running Locally
 
 ```

@@ -26,6 +26,7 @@
     "hbs": "^4.2.0",
     "openid-client": "^4.4.0",
     "passport": "^0.4.1",
+    "pg": "^8.7.3",
     "request": "^2.88.2",
     "request-promise-native": "^1.0.9",
     "sha.js": "^2.4.11"

@@ -101,17 +101,10 @@ function requireLogin(req, res, next) {
 }
 
 async function selectUser(email) {
-  var response = null;
-  db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], (err, res) => {
-    console.log('SELECT RESPONSE ROW 0', res.rows[0])
-    if (err) throw err;
-    for (let row of res.rows) {
-      console.log(JSON.stringify(row));
-    }
-    db.end();
-    response = res.rows[0];
-  });
-  return response;
+  const { rows } = db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email])
+  console.log('SELECT RESPONSE ROW 0', rows[0])
+
+  return rows[0];
 }
 
 function startApp(client) {
@@ -204,7 +197,9 @@ function startApp(client) {
       const accessToken = req.session.user.access_token;
       const refreshToken = req.session.user.refresh_token;
 
-      const record = await selectUser(email);
+      // const record = await selectUser(email);
+      const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email])
+      const record = rows[0]
 
       console.log('FOUND RECORD: ', record)
 

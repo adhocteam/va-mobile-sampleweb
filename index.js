@@ -119,7 +119,7 @@ function writeToDb(statement, values) {
 async function findUserRecord(email) {
   const db = createDbClient();
   const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
-
+  console.log('ROWS', rows)
   return rows[0];
 }
 
@@ -278,12 +278,13 @@ function startApp(client) {
 
       const email = req.params.email;
       const record = await findUserRecord(email);
-
+      console.log('RECORD', record)
       if (!record) {
+        console.log('NO RECORD FOUND')
         res.send({message: 'manual login required'}).status(404);
         next();
       }
-
+      console.log('CONTINUING ANYHOW')
       var tokenset = await client.refresh(record.iam_refresh_token, extras);
       updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
 

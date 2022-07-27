@@ -18,12 +18,14 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 
-const db = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+function createDbClient() {
+  return new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+}
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
@@ -181,7 +183,9 @@ function startApp(client) {
   app.get('/auth/login-success', passport.authenticate('oidc'),
     async function(req, res) {
       console.log('ASSIGNING USER')
-      await db.connect();
+
+      var db = createDbClient();
+      db.connect();
 
       req.session.user = Object.assign(req.user);
 
@@ -209,7 +213,8 @@ function startApp(client) {
       console.log('STATEMENT', statement)
       console.log('VALUES', values)
 
-      await db.connect();
+      db = createDbClient();
+      db.connect();
       db.query(statement, values, (err, res) => {
         console.log('INSERT/UPDATE RESPONSE', res)
         if (err) throw err;

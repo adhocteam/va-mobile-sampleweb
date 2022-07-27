@@ -18,14 +18,14 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 
-const pgClient = new Client({
+const db = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-pgClient.connect();
+db.connect();
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
@@ -176,6 +176,16 @@ function startApp(client) {
   app.get('/auth', passport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.session.user, req.user);
+
+      const insertStatement = `INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);`
+      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, Date.now()]
+      db.query(insertStatement, insertValues, (err, res) => {
+        if (err) throw err;
+        for (let row of res.rows) {
+          console.log(JSON.stringify(row));
+        }
+        db.end();
+      });
     }
   );
 

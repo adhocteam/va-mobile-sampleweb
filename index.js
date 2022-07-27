@@ -176,7 +176,16 @@ function startApp(client) {
   app.get('/auth', passport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.session.user, req.user);
+    }
+  );
 
+  app.get('/auth/login-success', passport.authenticate('oidc'),
+    function(req, res) {
+      console.log('assigning user')
+
+      req.session.user = Object.assign(req.user);
+
+      console.log('preparing db insert')
       const insertStatement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
       const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, Date.now()];
       console.log('insertStatement', insertStatement)
@@ -190,12 +199,7 @@ function startApp(client) {
         db.end();
       });
       console.log('done with database')
-    }
-  );
 
-  app.get('/auth/login-success', passport.authenticate('oidc'),
-    function(req, res) {
-      req.session.user = Object.assign(req.user);
       res.redirect('/');
     }
   );

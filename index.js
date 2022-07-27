@@ -18,12 +18,31 @@ const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
-const BASIC_AUTH_USER = 'tester';
-const BASIC_AUTH_PASSSWORD = 'letmein';
+const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER;
+const BASIC_AUTH_PASSSWORD = process.env.BASIC_AUTH_PASSSWORD;
+
+function createClient() {
+  Issuer.defaultHttpOptions = { timeout: 5000 };
+  const ssoeIssuer = new Issuer({
+    issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
+    authorization_endpoint: OAUTH_URL,
+    token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
+    jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
+    //Advertised in  metadata but seemingly not supported
+    // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
+  });
+  return new ssoeIssuer.Client({
+    client_id: CLIENT_ID,
+    client_secret: CLIENT_SECRET,
+    redirect_uris: [
+      CALLBACK_URL,
+    ],
+    response_types: ['code'],
+  });
+}
 
 function configurePassport(client) {
   passport.serializeUser(function(user, done) {
-    console.log('Serializing user: ', user)
     done(null, user);
   });
 
@@ -82,23 +101,13 @@ function createDbClient() {
     }
   });
   dbClient.connect();
+
   return dbClient;
 }
 
-async function findUser(email) {
-  const db = createDbClient();
-  const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
-
-  return rows[0];
-}
-
 function writeToDb(statement, values) {
-  console.log('STATEMENT', statement)
-  console.log('VALUES', values)
-
   const db = createDbClient();
   db.query(statement, values, (err, res) => {
-    console.log('DB WRITE RESPONSE', res)
     if (err) throw err;
     for (let row of res.rows) {
       console.log(JSON.stringify(row));
@@ -107,7 +116,14 @@ function writeToDb(statement, values) {
   });
 }
 
-function saveUser(email, accessToken, refreshToken) {
+async function findUserRecord(email) {
+  const db = createDbClient();
+  const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
+
+  return rows[0];
+}
+
+function saveUserRecord(email, accessToken, refreshToken) {
   const timestamp = new Date().toISOString();
   const statement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
   const values = [email, accessToken, refreshToken, timestamp];
@@ -115,32 +131,12 @@ function saveUser(email, accessToken, refreshToken) {
   writeToDb(statement, values);
 }
 
-function updateUser(email, accessToken, refreshToken) {
+function updateUserRecord(email, accessToken, refreshToken) {
   const timestamp = new Date().toISOString();
   const statement = 'UPDATE tokens SET iam_access_token = $1, iam_refresh_token = $2, updated_at = $3 WHERE email = $4;';
   const values = [accessToken, refreshToken, timestamp, email];
 
   writeToDb(statement, values);
-}
-
-function createClient() {
-  Issuer.defaultHttpOptions = { timeout: 5000 };
-  const ssoeIssuer = new Issuer({
-    issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
-    authorization_endpoint: OAUTH_URL,
-    token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
-    jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
-    //Advertised in  metadata but seemingly not supported
-    // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
-  });
-  return new ssoeIssuer.Client({
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-    redirect_uris: [
-      CALLBACK_URL,
-    ],
-    response_types: ['code'],
-  });
 }
 
 function startApp(client) {
@@ -224,22 +220,18 @@ function startApp(client) {
 
   app.get('/auth/login-success', passport.authenticate('oidc'),
     async function(req, res) {
-      console.log('ASSIGNING USER')
-
       req.session.user = Object.assign(req.user);
 
       const email = req.session.user.email;
       const accessToken = req.session.user.access_token;
       const refreshToken = req.session.user.refresh_token;
 
-      const record = await findUser(email);
-
-      console.log('FOUND RECORD: ', record)
+      const record = await findUserRecord(email);
 
       if (record) {
-        updateUser(email, accessToken, refreshToken);
+        updateUserRecord(email, accessToken, refreshToken);
       } else {
-        saveUser(email, accessToken, refreshToken);
+        saveUserRecord(email, accessToken, refreshToken);
       }
 
       res.redirect('/');
@@ -272,7 +264,7 @@ function startApp(client) {
 
   app.use('/auth/iam/token/:email', basicAuth({
     users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSSWORD }
-  }))
+  }));
   app.get('/auth/iam/token/:email', async (req, res, next) => {
     try {
       const extras = {
@@ -285,18 +277,16 @@ function startApp(client) {
       console.log('Refreshing with', req.params.email);
 
       const email = req.params.email;
-      const record = await findUser(email);
+      const record = await findUserRecord(email);
 
       if (!record) {
-        res.send({}).status(404);
+        res.send({message: 'manual login required'}).status(404);
         next();
       }
 
-      console.log('FOUND RECORD: ', record)
-
       var tokenset = await client.refresh(record.iam_refresh_token, extras);
-      console.log('TokenSet', tokenset);
-      updateUser(email, tokenset.access_token, tokenset.refresh_token);
+      updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
+
       res.send({ access_token: tokenset.access_token }).status(200);
       next();
     } catch (error) {

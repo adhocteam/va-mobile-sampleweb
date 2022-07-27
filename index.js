@@ -192,7 +192,7 @@ function startApp(client) {
       const refreshToken = req.session.user.refresh_token;
       var record = null;
 
-      db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], insertValues, (err, res) => {
+      db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], (err, res) => {
         console.log('SELECT RESPONSE', res)
         if (err) throw err;
         for (let row of res.rows) {

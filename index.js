@@ -186,8 +186,9 @@ function startApp(client) {
       req.session.user = Object.assign(req.user);
 
       console.log('preparing db insert')
+      const timestamp = new Date().toISOString();
       const insertStatement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
-      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, Date.now()];
+      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, timestamp];
       console.log('insertStatement', insertStatement)
       console.log('insertValues', insertValues)
       db.query(insertStatement, insertValues, (err, res) => {

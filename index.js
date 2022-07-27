@@ -119,7 +119,7 @@ function writeToDb(statement, values) {
 async function findUserRecord(email) {
   const db = createDbClient();
   const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
-  console.log('ROWS', rows)
+
   return rows[0];
 }
 
@@ -265,7 +265,7 @@ function startApp(client) {
   app.use('/auth/iam/token/:email', basicAuth({
     users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSWORD }
   }));
-  app.get('/auth/iam/token/:email', async (req, res, next) => {
+  app.get('/auth/iam/token/:email', async (req, res) => {
     try {
       const extras = {
         exchangeBody: {
@@ -278,21 +278,18 @@ function startApp(client) {
 
       const email = req.params.email;
       const record = await findUserRecord(email);
-      console.log('RECORD', record)
+
       if (!record) {
-        console.log('NO RECORD FOUND')
-        res.send({message: 'manual login required'}).status(404);
-        next();
+        res.send({ message: 'manual login required' }).status(404);
+        return null;
       }
-      console.log('CONTINUING ANYHOW')
+
       var tokenset = await client.refresh(record.iam_refresh_token, extras);
       updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
 
       res.send({ access_token: tokenset.access_token }).status(200);
-      next();
     } catch (error) {
-      res.render('error', { error: error, header: "Error" });
-      next(error);
+      res.send({ error: error }).status(500);
     }
   });
 

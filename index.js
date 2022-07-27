@@ -191,6 +191,7 @@ function startApp(client) {
       const refreshToken = req.session.user.refresh_token;
 
       const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email])
+      db.end();
       const record = rows[0]
 
       console.log('FOUND RECORD: ', record)
@@ -209,6 +210,7 @@ function startApp(client) {
       console.log('STATEMENT', statement)
       console.log('VALUES', values)
 
+      db.connect();
       db.query(statement, values, (err, res) => {
         console.log('INSERT/UPDATE RESPONSE', res)
         if (err) throw err;

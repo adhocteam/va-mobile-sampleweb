@@ -9,6 +9,7 @@ const hbs = require('hbs');
 const shajs = require('sha.js');
 const jose = require('jose');
 const { Client } = require('pg');
+const basicAuth = require('express-basic-auth')
 
 const secret = 'setec astronomy'
 const OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
@@ -17,6 +18,8 @@ const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+const BASIC_AUTH_USER = 'tester';
+const BASIC_AUTH_PASSSWORD = 'letmein';
 
 function configurePassport(client) {
   passport.serializeUser(function(user, done) {
@@ -267,6 +270,9 @@ function startApp(client) {
     res.redirect('/');
   });
 
+  app.use('/auth/iam/token/:email', basicAuth({
+    users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSSWORD }
+  }))
   app.get('/auth/iam/token/:email', async (req, res, next) => {
     try {
       const extras = {

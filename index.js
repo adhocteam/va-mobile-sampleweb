@@ -97,7 +97,7 @@ function createDbClient() {
   const dbClient = new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-      rejectUnauthorized: true
+      rejectUnauthorized: false
     }
   });
   dbClient.connect();

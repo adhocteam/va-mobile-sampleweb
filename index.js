@@ -185,7 +185,6 @@ function startApp(client) {
 
       req.session.user = Object.assign(req.user);
 
-      console.log('preparing db insert')
       const email = req.session.user.email;
       const timestamp = new Date().toISOString();
       const accessToken = req.session.user.access_token;
@@ -193,7 +192,7 @@ function startApp(client) {
       var record = null;
 
       db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], (err, res) => {
-        console.log('SELECT RESPONSE', res)
+        console.log('SELECT RESPONSE ROW 0', res.rows[0])
         if (err) throw err;
         for (let row of res.rows) {
           console.log(JSON.stringify(row));
@@ -202,11 +201,13 @@ function startApp(client) {
         db.end();
       });
 
+      console.log('FOUND RECORD: ', record)
+
       var statement = null;
       var values = null;
 
       if (record) {
-        statement = 'UPDATE tokens SET access_token = $1, refresh_token = $2, updated_at = $3 WHERE email = $4;';
+        statement = 'UPDATE tokens SET iam_access_token = $1, iam_refresh_token = $2, updated_at = $3 WHERE email = $4;';
         values = [accessToken, refreshToken, timestamp, email];
       } else {
         statement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';

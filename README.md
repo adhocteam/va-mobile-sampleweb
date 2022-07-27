@@ -31,7 +31,7 @@ port 4001.
 
 # Database
 
-The database is used to store refresh tokens, which allows us to fetch api tokens without manually loggin in every time. The database schema can be found in schema.sql. To create the table, run:
+The database is used to store refresh tokens, which allows us to fetch api tokens without manually logging in every time. The database schema can be found in schema.sql. To create the table, run:
 `heroku pg:psql DATABASE < schema.sql`
 
 # Running Locally

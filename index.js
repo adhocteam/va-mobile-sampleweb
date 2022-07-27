@@ -267,15 +267,6 @@ function startApp(client) {
   }));
   app.get('/auth/iam/token/:email', async (req, res) => {
     try {
-      const extras = {
-        exchangeBody: {
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: CALLBACK_URL,
-        }
-      }
-      console.log('Refreshing with', req.params.email);
-
       const email = req.params.email;
       const record = await findUserRecord(email);
 
@@ -284,6 +275,14 @@ function startApp(client) {
         return null;
       }
 
+      const extras = {
+        exchangeBody: {
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          redirect_uri: CALLBACK_URL,
+        }
+      }
+      console.log('Refreshing with', email);
       var tokenset = await client.refresh(record.iam_refresh_token, extras);
       updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
 

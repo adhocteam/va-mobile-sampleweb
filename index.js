@@ -177,15 +177,19 @@ function startApp(client) {
     function(req, res) {
       req.session.user = Object.assign(req.session.user, req.user);
 
-      const insertStatement = `INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);`
-      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, Date.now()]
+      const insertStatement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
+      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, Date.now()];
+      console.log('insertStatement', insertStatement)
+      console.log('insertValues', insertValues)
       db.query(insertStatement, insertValues, (err, res) => {
+        console.log('db response', res)
         if (err) throw err;
         for (let row of res.rows) {
           console.log(JSON.stringify(row));
         }
         db.end();
       });
+      console.log('done with database')
     }
   );
 

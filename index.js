@@ -101,14 +101,15 @@ function requireLogin(req, res, next) {
 }
 
 async function selectUser(email) {
-  const response = db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], (err, res) => {
+  var response = null;
+  db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], (err, res) => {
     console.log('SELECT RESPONSE ROW 0', res.rows[0])
     if (err) throw err;
     for (let row of res.rows) {
       console.log(JSON.stringify(row));
     }
     db.end();
-    res.rows[0];
+    response = res.rows[0];
   });
   return response;
 }
@@ -193,7 +194,7 @@ function startApp(client) {
   );
 
   app.get('/auth/login-success', passport.authenticate('oidc'),
-    function(req, res) {
+    async function(req, res) {
       console.log('ASSIGNING USER')
 
       req.session.user = Object.assign(req.user);

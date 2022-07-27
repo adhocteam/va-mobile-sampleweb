@@ -25,8 +25,6 @@ const db = new Client({
   }
 });
 
-db.connect();
-
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
   const ssoeIssuer = new Issuer({
@@ -98,13 +96,6 @@ function requireLogin(req, res, next) {
   } else {
     res.redirect('/auth');
   }
-}
-
-async function selectUser(email) {
-  const { rows } = db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email])
-  console.log('SELECT RESPONSE ROW 0', rows[0])
-
-  return rows[0];
 }
 
 function startApp(client) {
@@ -186,9 +177,11 @@ function startApp(client) {
     }
   );
 
+
   app.get('/auth/login-success', passport.authenticate('oidc'),
     async function(req, res) {
       console.log('ASSIGNING USER')
+      db.connect();
 
       req.session.user = Object.assign(req.user);
 
@@ -197,7 +190,6 @@ function startApp(client) {
       const accessToken = req.session.user.access_token;
       const refreshToken = req.session.user.refresh_token;
 
-      // const record = await selectUser(email);
       const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email])
       const record = rows[0]
 
@@ -225,7 +217,7 @@ function startApp(client) {
         }
         db.end();
       });
-      console.log('DONE WITH DATABASE')
+      console.log('DONE WITH DATABASE');
 
       res.redirect('/');
     }

@@ -19,7 +19,7 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER;
-const BASIC_AUTH_PASSSWORD = process.env.BASIC_AUTH_PASSSWORD;
+const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD;
 
 function createClient() {
   Issuer.defaultHttpOptions = { timeout: 5000 };
@@ -263,7 +263,7 @@ function startApp(client) {
   });
 
   app.use('/auth/iam/token/:email', basicAuth({
-    users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSSWORD }
+    users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSWORD }
   }));
   app.get('/auth/iam/token/:email', async (req, res, next) => {
     try {

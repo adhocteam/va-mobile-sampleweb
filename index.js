@@ -288,7 +288,7 @@ function startApp(client) {
 
       console.log('FOUND RECORD: ', record)
 
-      var tokenset = await client.refresh(record.refresh_token, extras);
+      var tokenset = await client.refresh(record.iam_refresh_token, extras);
       console.log('TokenSet', tokenset);
       updateUser(email, tokenset.access_token, tokenset.refresh_token);
       res.send({ access_token: tokenset.access_token }).status(200);

@@ -186,13 +186,38 @@ function startApp(client) {
       req.session.user = Object.assign(req.user);
 
       console.log('preparing db insert')
+      const email = req.session.user.email;
       const timestamp = new Date().toISOString();
-      const insertStatement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
-      const insertValues = [req.session.user.email, req.session.user.access_token, req.session.user.refresh_token, timestamp];
-      console.log('insertStatement', insertStatement)
-      console.log('insertValues', insertValues)
-      db.query(insertStatement, insertValues, (err, res) => {
-        console.log('db response', res)
+      const accessToken = req.session.user.access_token;
+      const refreshToken = req.session.user.refresh_token;
+      var record = null;
+
+      db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email], insertValues, (err, res) => {
+        console.log('SELECT RESPONSE', res)
+        if (err) throw err;
+        for (let row of res.rows) {
+          console.log(JSON.stringify(row));
+        }
+        record = res.rows[0]
+        db.end();
+      });
+
+      var statement = null;
+      var values = null;
+
+      if (record) {
+        statement = 'UPDATE tokens SET access_token = $1, refresh_token = $2, updated_at = $3 WHERE email = $4;';
+        values = [accessToken, refreshToken, timestamp, email];
+      } else {
+        statement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
+        values = [email, accessToken, refreshToken, timestamp];
+      }
+
+      console.log('statement', statement)
+      console.log('values', values)
+
+      db.query(statement, values, (err, res) => {
+        console.log('INSERT/UPDATE RESPONSE', res)
         if (err) throw err;
         for (let row of res.rows) {
           console.log(JSON.stringify(row));

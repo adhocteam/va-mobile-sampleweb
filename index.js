@@ -85,7 +85,7 @@ function configurePassport(client, type) {
         code_challenge: '1BUpxy37SoIPmKw96wbd6MDcvayOYm3ptT-zbe6L_zM',
         code_challenge_method: 'S256',
         oauth: 'true',
-        client_id: 'mobile'
+        client_id: SIS_CLIENT_ID
       }
       pkce = false;
       break;

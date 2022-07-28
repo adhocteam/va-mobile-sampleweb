@@ -274,11 +274,13 @@ function startApp() {
         }
       }
       const response = await request.post(options);
-      console.log('RESPONSE', response)
-      console.log('DATA', response['data'])
-      console.log('ACCESS TOKEN', response['data']['access_token'])
+      const output = JSON.parse(response)
+      console.log('RESPONSE', output)
+      console.log('DATA', output.data)
+      console.log('DATA 1', output['data'])
+      console.log('ACCESS TOKEN', output.data.access_token)
 
-      const user = { access_token: response['data']['access_token'], refresh_token: response['data']['refresh_token'] }
+      const user = { access_token: output.data.access_token, refresh_token: output.data.refresh_token }
       req.session.user = Object.assign(user);
       next();
     } catch (error) {

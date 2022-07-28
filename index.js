@@ -275,7 +275,7 @@ function startApp() {
       }
       const response = await request.post(options);
       console.log('RESPONSE', response)
-      const user = { access_token: req.data.access_token, refresh_token: req.data.refresh_token }
+      const user = { access_token: response.data.access_token, refresh_token: response.data.refresh_token }
       req.session.user = Object.assign(user);
       next();
     } catch (error) {

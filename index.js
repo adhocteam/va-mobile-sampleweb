@@ -287,7 +287,7 @@ function startApp() {
           'Authorization': `Bearer ${user.access_token}`
          }
       }
-      const introspectResponse = await request.post(introspectOptions);
+      const introspectResponse = await request(introspectOptions);
       const instrospectOutput = JSON.parse(introspectResponse);
       console.log('INTROSPECT OUTPUT', instrospectOutput);
       user['email'] = instrospectOutput.data.attributes.email;

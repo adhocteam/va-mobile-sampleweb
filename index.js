@@ -19,25 +19,28 @@ const IAM_OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oau
 const IAM_CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const IAM_TOKEN_URL = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token'
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
-// const SIS_CALLBACK_URL='https://staging-api.va.gov/v0/sign_in/callback'
-const SIS_CALLBACK_URL='vamobile://login-success'
+const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callback' // make env var
 const SIS_TOKEN_URL = 'https://staging-api.va.gov/v0/sign_in/token'
+const SIS_CLIENT_ID = 'mobile_test'
 
 function createClient(type) {
   var oauth_url = null;
   var callback_url = null;
   var token_endpoint = null;
+  var client_id = null;
 
   switch (type) {
     case ('iam'):
       oauth_url = IAM_OAUTH_URL;
       callback_url = IAM_CALLBACK_URL;
       token_endpoint = IAM_TOKEN_URL;
+      client_id = CLIENT_ID;
       break;
     case ('sis'):
       oauth_url = SIS_OAUTH_URL;
       callback_url = SIS_CALLBACK_URL;
       token_endpoint = SIS_TOKEN_URL;
+      client_id = SIS_CLIENT_ID;
       break;
   }
 
@@ -51,7 +54,7 @@ function createClient(type) {
     // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
   });
   return new ssoeIssuer.Client({
-    client_id: CLIENT_ID,
+    client_id: client_id,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
       callback_url,
@@ -255,6 +258,15 @@ function startApp() {
     }
   );
 
+  app.get('/auth/sis/login-success', sisPassport.authenticate('oidc'),
+  function(req, res) {
+    console.log("CALLBACK REQ ", req)
+    console.log("CALLBACK RES ", res)
+    req.session.user = Object.assign(req.user);
+    res.redirect('/');
+  }
+);
+
   app.get('/auth/refresh', async (req, res, next) => {
     try {
       const extras = {
@@ -277,28 +289,6 @@ function startApp() {
     }
   }, (req, res, next) => {
     res.redirect('/');
-  });
-
-  app.get('/auth/iam/refresh/:refreshToken', async (req, res, next) => {
-    try {
-      const extras = {
-        exchangeBody: {
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: IAM_CALLBACK_URL,
-        }
-      }
-      console.log('Refreshing with', req.params.refreshToken);
-      var tokenset = await iamClient.refresh(req.params.refreshToken, extras);
-      console.log('TokenSet', tokenset);
-      res.send({ access_token: tokenset.access_token }).status(200);
-      next()
-    } catch (error) {
-      res.render('error', { error: error, header: "Error" });
-      next(error);
-    }
-  }, (req, res, next) => {
-    console.log('REFRESH RES', res)
   });
 
   app.get('/logout', (req, res, next) => {

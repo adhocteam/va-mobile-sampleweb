@@ -261,8 +261,8 @@ function startApp() {
   app.get('/auth/sis/login-success', async function(req, res, next) {
     console.log("SIS CALLBACK REQ ", req)
     console.log("SIS CALLBACK RES ", res)
-    console.log("SIS QUERY IS :", res.query)
-    console.log("SIS CODE IS :", res.query.code)
+    console.log("SIS QUERY IS :", req.query)
+    console.log("SIS CODE IS :", req.query.code)
     try {
       const options = {
         url: SIS_TOKEN_URL,
@@ -270,7 +270,7 @@ function startApp() {
         form: {
           'grant_type': 'authorization_code',
           'code_verifier': '5787d673fb784c90f0e309883241803d',
-          'code': res.query.code
+          'code': req.query.code
         }
       }
       const response = await request.post(options);

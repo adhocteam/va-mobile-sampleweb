@@ -277,10 +277,20 @@ function startApp() {
       const output = JSON.parse(response)
       console.log('RESPONSE', output)
       console.log('DATA', output.data)
-      console.log('DATA 1', output['data'])
       console.log('ACCESS TOKEN', output.data.access_token)
 
       const user = { access_token: output.data.access_token, refresh_token: output.data.refresh_token }
+      const introspectOptions = {
+        url: 'https://staging-api.va.gov/v0/sign_in/introspect',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.access_token}`
+         }
+      }
+      const introspectResponse = await request.post(introspectOptions);
+      const instrospectOutput = JSON.parse(introspectResponse);
+      console.log('INTROSPECT OUTPUT', instrospectOutput);
+      user['email'] = instrospectOutput.data.attributes.email;
       req.session.user = Object.assign(user);
       next();
     } catch (error) {

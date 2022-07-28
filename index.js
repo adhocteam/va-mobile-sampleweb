@@ -258,10 +258,30 @@ function startApp() {
     }
   );
 
-  app.get('/auth/sis/login-success', function(req, res) {
-    console.log("CALLBACK REQ ", req)
-    console.log("CALLBACK RES ", res)
-    req.session.user = Object.assign(req.user);
+  app.get('/auth/sis/login-success', async function(req, res, next) {
+    console.log("SIS CALLBACK REQ ", req)
+    console.log("SIS CALLBACK RES ", res)
+    console.log("SIS CODE IS :", res.query.code)
+    try {
+      const options = {
+        url: SIS_TOKEN_URL,
+        headers: { 'Content-Type': 'application/json' },
+        form: {
+          'grant_type': 'authorization_code',
+          'code_verifier': '5787d673fb784c90f0e309883241803d',
+          'code': res.query.code
+        }
+      }
+      const response = await request.post(options);
+      console.log(RESPONSE, response)
+      // req.session.user = Object.assign(req.user);
+      next();
+    } catch (error) {
+      console.log('ERROR', error)
+      next()
+    }
+  }, (req, res, next) => {
+    console.log('MADE IT TO NEXT')
     res.redirect('/');
   });
 

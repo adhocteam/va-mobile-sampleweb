@@ -258,14 +258,12 @@ function startApp() {
     }
   );
 
-  app.get('/auth/sis/login-success', sisPassport.authenticate('oidc'),
-  function(req, res) {
+  app.get('/auth/sis/login-success', function(req, res) {
     console.log("CALLBACK REQ ", req)
     console.log("CALLBACK RES ", res)
     req.session.user = Object.assign(req.user);
     res.redirect('/');
-  }
-);
+  });
 
   app.get('/auth/refresh', async (req, res, next) => {
     try {

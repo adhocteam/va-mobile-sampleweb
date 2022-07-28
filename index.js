@@ -261,6 +261,7 @@ function startApp() {
   app.get('/auth/sis/login-success', async function(req, res, next) {
     console.log("SIS CALLBACK REQ ", req)
     console.log("SIS CALLBACK RES ", res)
+    console.log("SIS QUERY IS :", res.query)
     console.log("SIS CODE IS :", res.query.code)
     try {
       const options = {
@@ -273,7 +274,7 @@ function startApp() {
         }
       }
       const response = await request.post(options);
-      console.log(RESPONSE, response)
+      console.log('RESPONSE', response)
       // req.session.user = Object.assign(req.user);
       next();
     } catch (error) {

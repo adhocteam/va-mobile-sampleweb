@@ -12,52 +12,103 @@ const { Client } = require('pg');
 const basicAuth = require('express-basic-auth')
 
 const secret = 'setec astronomy'
-const OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
 const API_URL = process.env.API_URL || 'https://staging-api.va.gov'
 const CLIENT_ID = process.env.CLIENT_ID || 'VAMobile'
 const CLIENT_SECRET = process.env.CLIENT_SECRET
 const PORT = process.env.PORT || 4001;
-const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
 const BASIC_AUTH_USER = process.env.BASIC_AUTH_USER;
 const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD;
 
-function createClient() {
+const IAM_OAUTH_URL = process.env.OAUTH_URL || 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/authorize';
+const IAM_CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:' + PORT + '/auth/login-success';
+const IAM_TOKEN_URL = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token'
+const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
+const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callback';
+const SIS_TOKEN_URL = `${API_URL}/v0/sign_in/token`;
+const SIS_CLIENT_ID = 'mobile_test';
+const CODE_CHALLENGE = process.env.CODE_CHALLENGE;
+const CODE_VERIFIER = process.env.CODE_VERIFIER;
+
+
+function createClient(type) {
+  var oauth_url = null;
+  var callback_url = null;
+  var token_endpoint = null;
+  var client_id = null;
+
+  switch (type) {
+    case ('iam'):
+      oauth_url = IAM_OAUTH_URL;
+      callback_url = IAM_CALLBACK_URL;
+      token_endpoint = IAM_TOKEN_URL;
+      client_id = CLIENT_ID;
+      break;
+    case ('sis'):
+      oauth_url = SIS_OAUTH_URL;
+      callback_url = SIS_CALLBACK_URL;
+      token_endpoint = SIS_TOKEN_URL;
+      client_id = SIS_CLIENT_ID;
+      break;
+  }
+
   Issuer.defaultHttpOptions = { timeout: 5000 };
   const ssoeIssuer = new Issuer({
     issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
-    authorization_endpoint: OAUTH_URL,
-    token_endpoint: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/token',
+    authorization_endpoint: oauth_url,
+    token_endpoint: token_endpoint,
     jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
     //Advertised in  metadata but seemingly not supported
     // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
   });
   return new ssoeIssuer.Client({
-    client_id: CLIENT_ID,
+    client_id: client_id,
     client_secret: CLIENT_SECRET,
     redirect_uris: [
-      CALLBACK_URL,
+      callback_url,
     ],
     response_types: ['code'],
   });
 }
 
-function configurePassport(client) {
-  passport.serializeUser(function(user, done) {
+function configurePassport(client, type) {
+  const typedPassport = new passport.Authenticator()
+
+  var params = null;
+  var pkce = null;
+
+  switch (type) {
+    case ('iam'):
+      params = {
+        scope: 'openid',
+        response_mode: 'query'
+      }
+      pkce = true;
+      break;
+    case ('sis'):
+      params = {
+        application: 'vamobile',
+        code_challenge: CODE_CHALLENGE,
+        code_challenge_method: 'S256',
+        oauth: 'true',
+        client_id: SIS_CLIENT_ID
+      }
+      pkce = false;
+      break;
+  }
+
+  typedPassport.serializeUser(function(user, done) {
     done(null, user);
   });
 
-  passport.deserializeUser(function(user, done) {
+  typedPassport.deserializeUser(function(user, done) {
     done(null, user);
   });
 
-  passport.use('oidc', new Strategy(
+  typedPassport.use('oidc', new Strategy(
     {
       client,
-      params: {
-        scope: 'openid',
-        response_mode: 'query',
-      },
-      usePKCE: true,
+      params: params,
+      usePKCE: pkce,
       // SSOE oAuth seems to require these parameters for token exchange
       // even in PKCE mode, so add them here
       extras: {
@@ -82,14 +133,14 @@ function configurePassport(client) {
     }
   ));
 
-  return client;
+  return typedPassport;
 }
 
 function requireLogin(req, res, next) {
   if (req.session.user) {
     return next();
   } else {
-    res.redirect('/auth');
+    res.redirect('/');
   }
 }
 
@@ -139,7 +190,7 @@ function updateUserRecord(email, accessToken, refreshToken) {
   writeToDb(statement, values);
 }
 
-function startApp(client) {
+function startApp() {
   const app = express();
   app.set('view engine', 'hbs');
   app.set('view options', { layout: 'layout' });
@@ -152,8 +203,15 @@ function startApp(client) {
     saveUninitialized: true,
     cookie: { secure: false, maxAge: 60 * 60000 },
   }));
-  app.use(passport.initialize());
-  app.use(passport.session());
+
+  const iamClient = createClient('iam')
+  const iamPassport = configurePassport(iamClient, 'iam');
+  app.use(iamPassport.initialize());
+  app.use(iamPassport.session());
+  const sisClient = createClient('sis')
+  const sisPassport = configurePassport(sisClient, 'sis');
+  app.use(sisPassport.initialize());
+  app.use(sisPassport.session());
 
   app.get('/', (req, res) => {
     console.log('session id', req.session.id);
@@ -212,13 +270,19 @@ function startApp(client) {
     }
   });
 
-  app.get('/auth', passport.authenticate('oidc'),
+  app.get('/auth/iam', iamPassport.authenticate('oidc'),
     function(req, res) {
       req.session.user = Object.assign(req.session.user, req.user);
     }
   );
 
-  app.get('/auth/login-success', passport.authenticate('oidc'),
+  app.get('/auth/sis', sisPassport.authenticate('oidc'),
+    function(req, res) {
+      req.session.user = Object.assign(req.session.user, req.user);
+    }
+  );
+
+  app.get('/auth/login-success', iamPassport.authenticate('oidc'),
     async function(req, res) {
       req.session.user = Object.assign(req.user);
 
@@ -238,17 +302,51 @@ function startApp(client) {
     }
   );
 
+  app.get('/auth/sis/login-success', async function(req, res, next) {
+    try {
+      const tokenOptions = {
+        url: SIS_TOKEN_URL,
+        headers: { 'Content-Type': 'application/json' },
+        form: {
+          'grant_type': 'authorization_code',
+          'code_verifier': CODE_VERIFIER,
+          'code': req.query.code
+        }
+      }
+      const tokenResponse = await request.post(tokenOptions);
+      const tokenOutput = JSON.parse(tokenResponse)
+      const user = { access_token: tokenOutput.data.access_token, refresh_token: tokenOutput.data.refresh_token }
+      const introspectOptions = {
+        url: 'https://staging-api.va.gov/v0/sign_in/introspect',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.access_token}`
+         }
+      }
+      const introspectResponse = await request(introspectOptions);
+      const instrospectOutput = JSON.parse(introspectResponse);
+      user['email'] = instrospectOutput.data.attributes.email;
+      req.session.user = Object.assign(user);
+      next();
+    } catch (error) {
+      console.log('ERROR', error);
+      next();
+    }
+  }, (req, res, next) => {
+    res.redirect('/');
+  });
+
   app.get('/auth/refresh', async (req, res, next) => {
     try {
       const extras = {
         exchangeBody: {
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
-          redirect_uri: CALLBACK_URL,
+          redirect_uri: IAM_CALLBACK_URL,
         }
       }
       console.log('Refreshing with', req.session.user['refresh_token']);
-      var tokenset = await client.refresh(req.session.user['refresh_token'], extras);
+      var tokenset = await iamClient.refresh(req.session.user['refresh_token'], extras);
       req.session.user = Object.assign(req.session.user, tokenset);
       console.log('post-refresh req.session.user', req.session.user);
       await req.session.save();
@@ -279,15 +377,16 @@ function startApp(client) {
         exchangeBody: {
           client_id: CLIENT_ID,
           client_secret: CLIENT_SECRET,
-          redirect_uri: CALLBACK_URL,
+          redirect_uri: IAM_CALLBACK_URL,
         }
       }
       console.log('Refreshing with', email);
-      var tokenset = await client.refresh(record.iam_refresh_token, extras);
+      var tokenset = await iamClient.refresh(record.iam_refresh_token, extras);
       updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
 
       res.send({ access_token: tokenset.access_token }).status(200);
     } catch (error) {
+      console.log('ERROR REFRESHING TOKEN', error)
       res.send({ error: error }).status(500);
     }
   });
@@ -301,6 +400,4 @@ function startApp(client) {
   app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`));
 }
 
-const client = createClient();
-configurePassport(client);
-startApp(client);
+startApp();

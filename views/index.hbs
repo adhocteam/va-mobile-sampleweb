@@ -3,7 +3,10 @@
     {{#if user}}
       <h3>Hello {{{ user.email }}}</h3>
     {{else}}
-      <h3><a href="/auth">Please Login</a></h3>
+      <ul>
+        <h3><a href="/auth/iam">IAM Login</a></h3>
+        <h3><a href="/auth/sis">SIS Login</a></h3>
+      </ul>
     {{/if}}
   </div>
 </div>

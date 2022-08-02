@@ -25,6 +25,8 @@ const IAM_TOKEN_URL = 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/tok
 const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callback';
 const SIS_TOKEN_URL = `${API_URL}/v0/sign_in/token`;
+const SIS_REFRESH_URL = `${API_URL}/v0/sign_in/refresh`
+const SIS_INTROSPECT_URL = `${API_URL}/v0/sign_in/introspect`
 const SIS_CLIENT_ID = 'mobile_test';
 const CODE_CHALLENGE = process.env.CODE_CHALLENGE;
 const CODE_VERIFIER = process.env.CODE_VERIFIER;
@@ -33,20 +35,19 @@ const CODE_VERIFIER = process.env.CODE_VERIFIER;
 function createClient(type) {
   var oauth_url = null;
   var callback_url = null;
-  var token_endpoint = null;
   var client_id = null;
+  var issuer_token_url = {};
 
   switch (type) {
     case ('iam'):
       oauth_url = IAM_OAUTH_URL;
       callback_url = IAM_CALLBACK_URL;
-      token_endpoint = IAM_TOKEN_URL;
       client_id = CLIENT_ID;
+      issuer_token_url = { token_endpoint: IAM_TOKEN_URL }
       break;
     case ('sis'):
       oauth_url = SIS_OAUTH_URL;
       callback_url = SIS_CALLBACK_URL;
-      token_endpoint = SIS_TOKEN_URL;
       client_id = SIS_CLIENT_ID;
       break;
   }
@@ -55,8 +56,8 @@ function createClient(type) {
   const ssoeIssuer = new Issuer({
     issuer: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/metadata/ISAMOPe',
     authorization_endpoint: oauth_url,
-    token_endpoint: token_endpoint,
     jwks_uri: 'https://sqa.fed.eauth.va.gov/oauthe/sps/oauth/oauth20/jwks/ISAMOPeFP',
+    ...issuer_token_url
     //Advertised in  metadata but seemingly not supported
     // userinfo_endpoint: 'https://sqa.fed.eauth.va.gov/oauthi/sps/oauth/oauth20/userinfo',
   });
@@ -174,20 +175,30 @@ async function findUserRecord(email) {
   return rows[0];
 }
 
-function saveUserRecord(email, accessToken, refreshToken) {
+function saveUserRecord(type, email, accessToken, refreshToken) {
   const timestamp = new Date().toISOString();
-  const statement = 'INSERT INTO tokens (email, iam_access_token, iam_refresh_token, created_at) VALUES ($1, $2, $3, $4);';
+  const statement = `INSERT INTO tokens (email, ${type}_access_token, ${type}_refresh_token, created_at) VALUES ($1, $2, $3, $4);`;
   const values = [email, accessToken, refreshToken, timestamp];
 
   writeToDb(statement, values);
 }
 
-function updateUserRecord(email, accessToken, refreshToken) {
+function updateUserRecord(type, email, accessToken, refreshToken) {
   const timestamp = new Date().toISOString();
-  const statement = 'UPDATE tokens SET iam_access_token = $1, iam_refresh_token = $2, updated_at = $3 WHERE email = $4;';
+  const statement = `UPDATE tokens SET ${type}_access_token = $1, ${type}_refresh_token = $2, updated_at = $3 WHERE email = $4;`;
   const values = [accessToken, refreshToken, timestamp, email];
 
   writeToDb(statement, values);
+}
+
+async function createOrUpdateRecord(type, email, accessToken, refreshToken) {
+  const record = await findUserRecord(email);
+
+  if (record) {
+    updateUserRecord(type, email, accessToken, refreshToken);
+  } else {
+    saveUserRecord(type, email, accessToken, refreshToken);
+  }
 }
 
 function startApp() {
@@ -283,20 +294,14 @@ function startApp() {
   );
 
   app.get('/auth/login-success', iamPassport.authenticate('oidc'),
-    async function(req, res) {
+    function(req, res) {
       req.session.user = Object.assign(req.user);
 
       const email = req.session.user.email;
       const accessToken = req.session.user.access_token;
       const refreshToken = req.session.user.refresh_token;
 
-      const record = await findUserRecord(email);
-
-      if (record) {
-        updateUserRecord(email, accessToken, refreshToken);
-      } else {
-        saveUserRecord(email, accessToken, refreshToken);
-      }
+      createOrUpdateRecord('iam', email, accessToken, refreshToken)
 
       res.redirect('/');
     }
@@ -314,19 +319,27 @@ function startApp() {
         }
       }
       const tokenResponse = await request.post(tokenOptions);
-      const tokenOutput = JSON.parse(tokenResponse)
-      const user = { access_token: tokenOutput.data.access_token, refresh_token: tokenOutput.data.refresh_token }
+      const tokenOutput = JSON.parse(tokenResponse);
+      const accessToken = tokenOutput.data.access_token;
+      const refreshToken = tokenOutput.data.refresh_token;
+
+      const userData = { access_token: accessToken, refresh_token: refreshToken }
       const introspectOptions = {
-        url: 'https://staging-api.va.gov/v0/sign_in/introspect',
+        url: SIS_INTROSPECT_URL,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.access_token}`
+          'Authorization': `Bearer ${userData.access_token}`
          }
       }
       const introspectResponse = await request(introspectOptions);
       const instrospectOutput = JSON.parse(introspectResponse);
-      user['email'] = instrospectOutput.data.attributes.email;
-      req.session.user = Object.assign(user);
+      const email = instrospectOutput.data.attributes.email;
+
+      userData['email'] = email;
+      req.session.user = Object.assign(userData);
+
+      createOrUpdateRecord('sis', email, accessToken, refreshToken);
+
       next();
     } catch (error) {
       console.log('ERROR', error);
@@ -382,11 +395,48 @@ function startApp() {
       }
       console.log('Refreshing with', email);
       var tokenset = await iamClient.refresh(record.iam_refresh_token, extras);
-      updateUserRecord(email, tokenset.access_token, tokenset.refresh_token);
+      updateUserRecord('iam', email, tokenset.access_token, tokenset.refresh_token);
 
       res.send({ access_token: tokenset.access_token }).status(200);
     } catch (error) {
-      console.log('ERROR REFRESHING TOKEN', error)
+      console.log('ERROR REFRESHING IAM TOKEN', error)
+      res.send({ error: error }).status(500);
+    }
+  });
+
+  app.use('/auth/sis/token/:email', basicAuth({
+    users: { [BASIC_AUTH_USER]: BASIC_AUTH_PASSWORD }
+  }));
+  app.get('/auth/sis/token/:email', async (req, res) => {
+    try {
+      const email = req.params.email;
+      const record = await findUserRecord(email);
+
+      if (!record) {
+        res.send({ message: 'manual login required' }).status(404);
+        return null;
+      }
+
+      const options = {
+        url: SIS_REFRESH_URL,
+        headers: {
+          'Content-Type': 'application/json'
+         },
+         form: {
+          'refresh_token': record.sis_refresh_token
+         }
+      }
+
+      console.log('Refreshing with', email);
+
+      const response = await request.post(options);
+      const output = JSON.parse(response);
+
+      updateUserRecord('sis', email, output.data.access_token, output.data.refresh_token);
+
+      res.send({ access_token: output.data.access_token }).status(200);
+    } catch (error) {
+      console.log('ERROR REFRESHING SIS TOKEN', error)
       res.send({ error: error }).status(500);
     }
   });

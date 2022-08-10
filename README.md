@@ -72,7 +72,7 @@ If you do not change the default SIS_CALLBACK_URL, the app will callback to the 
 
 Local SIS sign-in is most likely possible by running a local copy of the rails server and pointing all calls from this app at it rather than at staging. The SIS team configured the callback url to point to localhost in development. But there are some difficulties in getting the two apps working correctly together. *TODO*: get this working and update this documentation.
 
-## Run Locally
+### Run Locally
 
 ```
 $ npm install

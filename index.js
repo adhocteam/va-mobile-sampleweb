@@ -171,6 +171,7 @@ function writeToDb(statement, values) {
 async function findUserRecord(email) {
   const db = createDbClient();
   const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
+  db.end();
 
   return rows[0];
 }

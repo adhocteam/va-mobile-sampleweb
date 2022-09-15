@@ -171,6 +171,7 @@ function writeToDb(statement, values) {
 async function findUserRecord(email) {
   const db = createDbClient();
   const { rows } = await db.query('SELECT * FROM tokens WHERE email = $1 LIMIT 1', [email]);
+  db.end();
 
   return rows[0];
 }
@@ -344,30 +345,6 @@ function startApp() {
     } catch (error) {
       console.log('ERROR', error);
       next();
-    }
-  }, (req, res, next) => {
-    res.redirect('/');
-  });
-
-  app.get('/auth/refresh', async (req, res, next) => {
-    try {
-      const extras = {
-        exchangeBody: {
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uri: IAM_CALLBACK_URL,
-        }
-      }
-      console.log('Refreshing with', req.session.user['refresh_token']);
-      var tokenset = await iamClient.refresh(req.session.user['refresh_token'], extras);
-      req.session.user = Object.assign(req.session.user, tokenset);
-      console.log('post-refresh req.session.user', req.session.user);
-      await req.session.save();
-      console.log('post-refresh session id', req.session.id);
-      next();
-    } catch (error) {
-      res.render('error', { error: error, user: req.session.user, header: "Error" });
-      next(error);
     }
   }, (req, res, next) => {
     res.redirect('/');

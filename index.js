@@ -27,7 +27,7 @@ const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callba
 const SIS_TOKEN_URL = `${API_URL}/v0/sign_in/token`;
 const SIS_REFRESH_URL = `${API_URL}/v0/sign_in/refresh`
 const SIS_INTROSPECT_URL = `${API_URL}/v0/sign_in/introspect`
-const SIS_CLIENT_ID = 'mobile_test';
+const SIS_CLIENT_ID = 'vamobile_test';
 const CODE_CHALLENGE = process.env.CODE_CHALLENGE;
 const CODE_VERIFIER = process.env.CODE_VERIFIER;
 

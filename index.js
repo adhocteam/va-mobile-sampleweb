@@ -26,7 +26,7 @@ const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callback';
 const SIS_TOKEN_URL = `${API_URL}/v0/sign_in/token`;
 const SIS_REFRESH_URL = `${API_URL}/v0/sign_in/refresh`
-const SIS_INTROSPECT_URL = `${API_URL}/v0/sign_in/introspect`
+const SIS_INTROSPECT_URL = `${API_URL}/mobile/v2/user`
 const SIS_CLIENT_ID = 'vamobile_test';
 const CODE_CHALLENGE = process.env.CODE_CHALLENGE;
 const CODE_VERIFIER = process.env.CODE_VERIFIER;
@@ -334,7 +334,7 @@ function startApp() {
       }
       const introspectResponse = await request(introspectOptions);
       const instrospectOutput = JSON.parse(introspectResponse);
-      const email = instrospectOutput.data.attributes.email;
+      const email = instrospectOutput.data.attributes.signinEmail;
 
       userData['email'] = email;
       req.session.user = Object.assign(userData);

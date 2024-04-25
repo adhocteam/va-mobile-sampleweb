@@ -333,7 +333,9 @@ function startApp() {
          }
       }
       const introspectResponse = await request(introspectOptions);
+      console.log("=== INTROSPECT RESPONSE ===", introspectResponse)
       const instrospectOutput = JSON.parse(introspectResponse);
+      console.log("=== PARSED INTROSPECT RESPONSE ===", instrospectOutput)
       const email = instrospectOutput.data.attributes.signinEmail;
 
       userData['email'] = email;

@@ -330,7 +330,8 @@ function startApp() {
         url: SIS_INTROSPECT_URL,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userData.access_token}`
+          'Authorization': `Bearer ${userData.access_token}`,
+          'Authentication-Method': 'SIS'
          }
       }
       console.log("=== INTROSPECTING ===")

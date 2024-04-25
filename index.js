@@ -331,7 +331,8 @@ function startApp() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userData.access_token}`,
-          'Authentication-Method': 'SIS'
+          'Authentication-Method': 'SIS',
+          'X-Key-Inflection': 'camel'
          }
       }
       console.log("=== INTROSPECTING ===")

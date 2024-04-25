@@ -310,6 +310,7 @@ function startApp() {
 
   app.get('/auth/sis/login-success', async function(req, res, next) {
     try {
+      console.log("=== FETCHING TOKEN ===")
       const tokenOptions = {
         url: SIS_TOKEN_URL,
         headers: { 'Content-Type': 'application/json' },
@@ -332,10 +333,11 @@ function startApp() {
           'Authorization': `Bearer ${userData.access_token}`
          }
       }
+      console.log("=== INTROSPECTING ===")
       const introspectResponse = await request(introspectOptions);
-      console.log("=== INTROSPECT RESPONSE ===", introspectResponse)
       const instrospectOutput = JSON.parse(introspectResponse);
-      console.log("=== PARSED INTROSPECT RESPONSE ===", instrospectOutput)
+      console.log("=== PARSED INTROSPECT RESPONSE ===")
+      console.log(instrospectOutput)
       const email = instrospectOutput.data.attributes.signinEmail;
 
       userData['email'] = email;

@@ -125,11 +125,10 @@ function configurePassport(client, type) {
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
         console.log('id_token', payload);
-      } else {
-        console.log('user.name', user.email);
-        console.log('user.icn', user.fediamMVIICN);
-        console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       }
+      console.log('user.name', user.email);
+      console.log('user.icn', user.fediamMVIICN);
+      console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       return done(null, user);
     }
   ));
@@ -161,8 +160,10 @@ function writeToDb(statement, values) {
   const db = createDbClient();
   db.query(statement, values, (err, res) => {
     if (err) throw err;
-    for (let row of res.rows) {
-      console.log(JSON.stringify(row));
+    if (process.env.VERBOSE === 'true') {
+      for (let row of res.rows) {
+        console.log(JSON.stringify(row));
+      }
     }
     db.end();
   });
@@ -310,7 +311,6 @@ function startApp() {
 
   app.get('/auth/sis/login-success', async function(req, res, next) {
     try {
-      console.log("=== FETCHING TOKEN ===")
       const tokenOptions = {
         url: SIS_TOKEN_URL,
         headers: { 'Content-Type': 'application/json' },
@@ -335,11 +335,8 @@ function startApp() {
           'X-Key-Inflection': 'camel'
          }
       }
-      console.log("=== INTROSPECTING ===")
       const introspectResponse = await request(introspectOptions);
       const instrospectOutput = JSON.parse(introspectResponse);
-      console.log("=== PARSED INTROSPECT RESPONSE ===")
-      console.log(instrospectOutput)
       const email = instrospectOutput.data.attributes.signinEmail;
 
       userData['email'] = email;

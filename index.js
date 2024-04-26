@@ -26,7 +26,7 @@ const SIS_OAUTH_URL='https://staging.va.gov/sign-in'
 const SIS_CALLBACK_URL='https://va-mobile-cutter.herokuapp.com/v0/sign_in/callback';
 const SIS_TOKEN_URL = `${API_URL}/v0/sign_in/token`;
 const SIS_REFRESH_URL = `${API_URL}/v0/sign_in/refresh`
-const SIS_INTROSPECT_URL = `${API_URL}/v0/sign_in/introspect`
+const SIS_INTROSPECT_URL = `${API_URL}/mobile/v2/user`
 const SIS_CLIENT_ID = 'vamobile_test';
 const CODE_CHALLENGE = process.env.CODE_CHALLENGE;
 const CODE_VERIFIER = process.env.CODE_VERIFIER;
@@ -125,11 +125,10 @@ function configurePassport(client, type) {
       if (process.env.VERBOSE === 'true') {
         console.log('access_token', tokenset.access_token);
         console.log('id_token', payload);
-      } else {
-        console.log('user.name', user.email);
-        console.log('user.icn', user.fediamMVIICN);
-        console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       }
+      console.log('user.name', user.email);
+      console.log('user.icn', user.fediamMVIICN);
+      console.log('access_token digest', new shajs.sha256().update(user.access_token).digest('hex'));
       return done(null, user);
     }
   ));
@@ -161,8 +160,10 @@ function writeToDb(statement, values) {
   const db = createDbClient();
   db.query(statement, values, (err, res) => {
     if (err) throw err;
-    for (let row of res.rows) {
-      console.log(JSON.stringify(row));
+    if (process.env.VERBOSE === 'true') {
+      for (let row of res.rows) {
+        console.log(JSON.stringify(row));
+      }
     }
     db.end();
   });
@@ -329,12 +330,14 @@ function startApp() {
         url: SIS_INTROSPECT_URL,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${userData.access_token}`
+          'Authorization': `Bearer ${userData.access_token}`,
+          'Authentication-Method': 'SIS',
+          'X-Key-Inflection': 'camel'
          }
       }
       const introspectResponse = await request(introspectOptions);
       const instrospectOutput = JSON.parse(introspectResponse);
-      const email = instrospectOutput.data.attributes.email;
+      const email = instrospectOutput.data.attributes.signinEmail;
 
       userData['email'] = email;
       req.session.user = Object.assign(userData);
